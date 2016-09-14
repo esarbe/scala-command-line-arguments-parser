@@ -40,7 +40,6 @@ class ArgumentsSuite extends FunSuite {
 
   final case class ArgumentsParser[I <: Any, O <: Any](argument: Argument[I], builder: I => O) {
     def parse(args: Array[String]): Either[String, O] = {
-
       argument.consume(args).right.map(builder)
     }
   }
@@ -65,6 +64,7 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-o")) isLeft)
     assert(parser.parse(Array("-p")) isLeft)
     assert(parser.parse(Array("")) isLeft)
+    assert(parser.parse(Array("-f", "-p", "set")) isLeft)
 
   }
 
