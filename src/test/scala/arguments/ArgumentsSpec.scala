@@ -65,7 +65,7 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-p")) isLeft)
     assert(parser.parse(Array("")) isLeft)
     assert(parser.parse(Array("-f", "-p", "set")) isLeft)
-
+    assert(parser.parse(Array("-p", "foo", "-p")) isLeft)
   }
 
 
