@@ -99,5 +99,20 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-p", "foo", "-p")) isLeft)
   }
 
+  test("expecting one of two mutually exclusive arguments") {
+    val parser = ArgumentsParser(
+      Alternative(
+        Parameter[String]('p'),
+        Parameter[String]('q')
+      ),
+      builder = (s: String) => Right(s)
+    )
+
+    assert(parser.parse(Array("-p", "bar")) == Right("bar"))
+    assert(parser.parse(Array("-q", "foo")) == Right("foo"))
+    assert(parser.parse(Array("-q", "foo", "-p", "bar")) isLeft)
+    assert(parser.parse(Array("-q", "foo", "bar")) isLeft)
+  }
+
 
 }
