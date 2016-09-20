@@ -2,8 +2,6 @@ package arguments
 
 import org.scalatest.FunSuite
 
-import scala.collection.{GenSeq, GenSeqLike}
-
 class ArgumentsSuite extends FunSuite {
 
   type Builder[-I, +O] = I => Either[String, O]
@@ -19,13 +17,23 @@ class ArgumentsSuite extends FunSuite {
 
   sealed trait Argument[T] { self =>
     def consume(args: Seq[String]): Either[String, (Seq[String], T)]
+    def name: String
   }
 
   final case class Alternative[S: Reads](left: Argument[S], right: Argument[S]) extends Argument[S] {
-    override def consume(args: Seq[String]): Either[String, (Seq[String], S)]  = ???
+    override def consume(args: Seq[String]): Either[String, (Seq[String], S)] = {
+      (left.consume(args), right.consume(args)) match {
+        case (a@ Left(_), b@ Right(_)) => b
+        case (a@ Right(_), b@ Left(_)) => a
+        case (a@ Left(aMessage), b@ Left(bMessage)) => Left(s"$aMessage, $bMessage")
+        case (a@ Right(_), b@ Right(_)) => Left(s"arguments ${left.name} and ${right.name} are mutually exclusive")
+      }
+    }
+    override def name: String = s"${left.name} | ${right.name}"
   }
 
   final case class Parameter[T: Reads](short: Char) extends Argument[T] {
+    override def name: String = s"-$short"
     override def consume(args: Seq[String]): Either[String, (Seq[String], T)] = {
 
       sealed trait State
@@ -74,16 +82,6 @@ class ArgumentsSuite extends FunSuite {
       }
     }
   }
-
-
-
-  implicit class OptionIndexGenSeq[+A, +Repr](genSeq: Array[A]) {
-    def oIndexOf[B >: A](elem: B): Option[Int] = genSeq.indexOf(elem) match {
-      case -1 => None
-      case a => Some(a)
-    }
-  }
-
 
   test("expecting a single parameter") {
     val parser = ArgumentsParser(
