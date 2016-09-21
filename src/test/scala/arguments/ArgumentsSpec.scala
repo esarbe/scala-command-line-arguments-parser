@@ -32,4 +32,20 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-q", "foo", "-p", "bar")) isLeft)
     assert(parser.parse(Array("-q", "foo", "bar")) isLeft)
   }
+
+  case class Flag[T](c: Char) extends Argument[T] {
+    override def consume(args: Seq[String]): Either[String, (Seq[String], T)] = ???
+    override def name: String = ???
+  }
+
+  test("expecting flag to be present or not ") {
+    val parser = ArgumentsParser (
+      Flag[Boolean]('f'),
+      builder = (s: String) => Right(s)
+    )
+
+    assert(parser.parse(Array("-f")) == Right(true))
+    assert(parser.parse(Array()) == Right(false))
+    assert(parser.parse(Array("-g")) isLeft)
+  }
 }
