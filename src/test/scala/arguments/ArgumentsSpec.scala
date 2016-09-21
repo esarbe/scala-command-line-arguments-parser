@@ -4,14 +4,6 @@ import org.scalatest.FunSuite
 
 class ArgumentsSuite extends FunSuite {
 
-  type Builder[-I, +O] = I => Either[String, O]
-  val noopBuilder: Builder[Any, Any] = in => Right(in)
-
-  implicit val StringReader: Reads[String] = new Reads[String] {
-    override def read(s: String): Either[String, String] = Right(s)
-  }
-
-
   test("expecting a single parameter") {
     val parser = ArgumentsParser(
       Parameter[String]('p'),
