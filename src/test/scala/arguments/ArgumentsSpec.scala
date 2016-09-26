@@ -52,4 +52,18 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array()) == Right(false))
     assert(parser.parse(Array("-g")) isLeft)
   }
+  test("expecting flag a be present or not and an parameter to be set") {
+    val parser = ArgumentsParserBuilder (
+      MultipleArguments2(
+        Flag[Boolean]('f'),
+        Parameter[String]('p')
+      )
+    ).build { case result =>
+      Right(result)
+    }
+
+    assert(parser.parse(Array("-f", "-p", "foo")) == Right((true, "foo")))
+    assert(parser.parse(Array("-p", "foo")) == Right((false, "foo")))
+
+  }
 }
