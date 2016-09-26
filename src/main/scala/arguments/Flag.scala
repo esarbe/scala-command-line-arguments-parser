@@ -20,7 +20,7 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
           } else (args, NotFound)
         case Found =>
           if (isFlagPresent(curr)) (args, DuplicateFlag)
-          else (args, Found)
+          else (rest :+ curr, Found)
         case DuplicateFlag => (args, DuplicateFlag)
       }
     }
