@@ -8,6 +8,10 @@ class ArgumentsSuite extends FunSuite {
     override def read(s: String): Either[String, String] = Right(s)
   }
 
+  implicit val booleanFlagger: Flags[Boolean] = new Flags[Boolean] {
+    override def flags(present: Boolean): Either[String, Boolean] = Right(present)
+  }
+
   test("expecting a single parameter") {
     val parser = ArgumentsParser(
       Parameter[String]('p'),
@@ -38,10 +42,6 @@ class ArgumentsSuite extends FunSuite {
   }
 
   test("expecting flag to be present or not") {
-
-    implicit val booleanFlagger: Flags[Boolean] = new Flags[Boolean] {
-      override def flags(present: Boolean): Either[String, Boolean] = Right(present)
-    }
 
     val parser = ArgumentsParser (
       Flag[Boolean]('f'),
