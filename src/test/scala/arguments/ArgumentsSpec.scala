@@ -52,6 +52,19 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array()) == Right(false))
     assert(parser.parse(Array("-g")) isLeft)
   }
+
+  case class MultipleArguments2[A, B](first: Argument[A], second: Argument[B]) extends Argument[(A, B)] {
+    override def consume(args: Seq[String]): Either[String, (Seq[String], (A, B))] = {
+      first.consume(args).right.flatMap { case (firstRemainingArgs, firstResult) =>
+        second.consume(firstRemainingArgs).right.map { case (secondRemainingArgs, secondResult) =>
+          (secondRemainingArgs, (firstResult, secondResult))
+        }
+      }
+    }
+
+    override def name: String = first.name + ", " + second.name
+  }
+
   test("expecting flag a be present or not and an parameter to be set") {
     val parser = ArgumentsParserBuilder (
       MultipleArguments2(
