@@ -7,9 +7,11 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
   case object Found extends State
   case object DuplicateFlag extends State
 
+  val presentMultipleTimes = Left(ArgumentPresentMultipleTimes(this))
+
   val flagger = implicitly[Flags[T]]
 
-  override def consume(args: Seq[String]): Either[String, (Seq[String], T)] = {
+  override def consume(args: Seq[String]): Result[(Seq[String], T)] = {
     val (rest, state) = args.foldLeft((Seq[String](), NotFound: State)) { case ((rest, state), curr) =>
       state match {
         case NotFound =>
@@ -28,7 +30,7 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
     val value = state match {
       case Found => flagger.flags(true)
       case NotFound => flagger.flags(false)
-      case DuplicateFlag => Left(s"duplicate flag '$c' present")
+      case DuplicateFlag => presentMultipleTimes
     }
 
     value.right.map { (rest, _)}
@@ -48,5 +50,5 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
 }
 
 trait Flags[T] {
-  def flags(present: Boolean): Either[String, T]
+  def flags(present: Boolean): Result[T]
 }

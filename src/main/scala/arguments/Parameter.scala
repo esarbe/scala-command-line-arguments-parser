@@ -1,8 +1,14 @@
 package arguments
 
 final case class Parameter[T: Reads](short: Char) extends Argument[T] {
+
+  val notFound = Left(ArgumentExpected(this))
+  val requiresValue = Left(ValueExpected(this))
+  val presentMultipleTimes = Left(ArgumentPresentMultipleTimes(this))
+  val paramKey = s"-$short"
+
   override def name: String = s"-$short"
-  override def consume(args: Seq[String]): Either[String, (Seq[String], T)] = {
+  override def consume(args: Seq[String]): Result[(Seq[String], T)] = {
 
     sealed trait State
     case object NotFound extends State
@@ -11,10 +17,6 @@ final case class Parameter[T: Reads](short: Char) extends Argument[T] {
     final case class FoundValue(value: String) extends State
 
     val reader = implicitly[Reads[T]]
-
-    val notFound = Left(s"parameter '$short' is required")
-    val requiresValue = Left(s"parameter '$short' requires a value" )
-    val paramKey = s"-$short"
 
     val (rest, state) = args.foldLeft((List[String](), NotFound: State)){ case ((rest, state), curr) =>
       state match {
@@ -33,7 +35,7 @@ final case class Parameter[T: Reads](short: Char) extends Argument[T] {
       case NotFound => notFound
       case ExpectingValue => requiresValue
       case FoundValue(value) => reader.read(value)
-      case DuplicateParameter => Left(s"parameter '$short' found more than once")
+      case DuplicateParameter => presentMultipleTimes
     }
 
     result.right.map { value =>

@@ -5,11 +5,11 @@ import org.scalatest.FunSuite
 class ArgumentsSuite extends FunSuite {
 
   implicit val stringReads: Reads[String] = new Reads[String] {
-    override def read(s: String): Either[String, String] = Right(s)
+    override def read(s: String): Result[String] = Right(s)
   }
 
   implicit val booleanFlagger: Flags[Boolean] = new Flags[Boolean] {
-    override def flags(present: Boolean): Either[String, Boolean] = Right(present)
+    override def flags(present: Boolean): Result[Boolean] = Right(present)
   }
 
   test("expecting a single parameter") {
@@ -54,7 +54,7 @@ class ArgumentsSuite extends FunSuite {
   }
 
   case class MultipleArguments2[A, B](first: Argument[A], second: Argument[B]) extends Argument[(A, B)] {
-    override def consume(args: Seq[String]): Either[String, (Seq[String], (A, B))] = {
+    override def consume(args: Seq[String]): Result[(Seq[String], (A, B))] = {
       first.consume(args).right.flatMap { case (firstRemainingArgs, firstResult) =>
         second.consume(firstRemainingArgs).right.map { case (secondRemainingArgs, secondResult) =>
           (secondRemainingArgs, (firstResult, secondResult))
