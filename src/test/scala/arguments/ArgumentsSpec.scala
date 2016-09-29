@@ -71,13 +71,39 @@ class ArgumentsSuite extends FunSuite {
         Flag[Boolean]('f'),
         Parameter[String]('p')
       )
-    ).build { case result =>
-      Right(result)
-    }
+    ).build { Right(_) }
 
     assert(parser.parse(Array("-f", "-p", "foo")) == Right((true, "foo")))
     assert(parser.parse(Array("-p", "foo")) == Right((false, "foo")))
     assert(parser.parse(Array()) isLeft)
     assert(parser.parse(Array("-qux")) isLeft)
+  }
+
+  case class OptionalParameter[T](parameter: Parameter[T]) extends Argument[Option[T]] {
+    override def consume(args: Seq[String]): Result[(Seq[String], Option[T])] = {
+
+      val optionalResult = parameter.consume(args).right.flatMap {
+        case (rest: Seq[String], value: T) => Right(rest, Some(value))
+      }.left.flatMap {
+        case ArgumentExpected(a) => Right((args, None))
+        case e: Error => Left(e)
+      }
+
+      optionalResult
+    }
+
+    override def name: String = s"[ ${parameter.name} ]"
+  }
+
+  test("expecting a parameter to be present or not"){
+    val parser = ArgumentsParserBuilder (
+      OptionalParameter(Parameter[String]('v'))
+    ).build(Right(_))
+
+    assert(parser.parse(Array("-f")) isLeft)
+    assert(parser.parse(Array("-v")) isLeft)
+    assert(parser.parse(Array("-v", "foo", "-g")) isLeft)
+    assert(parser.parse(Array("-v", "foo")) == Right(Some("foo")))
+    assert(parser.parse(Array()) == Right(None))
   }
 }
