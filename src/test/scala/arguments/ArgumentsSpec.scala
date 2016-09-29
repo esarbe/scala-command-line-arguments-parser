@@ -53,21 +53,9 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-g")) isLeft)
   }
 
-  case class MultipleArguments2[A, B](first: Argument[A], second: Argument[B]) extends Argument[(A, B)] {
-    override def consume(args: Seq[String]): Result[(Seq[String], (A, B))] = {
-      first.consume(args).right.flatMap { case (firstRemainingArgs, firstResult) =>
-        second.consume(firstRemainingArgs).right.map { case (secondRemainingArgs, secondResult) =>
-          (secondRemainingArgs, (firstResult, secondResult))
-        }
-      }
-    }
-
-    override def name: String = first.name + ", " + second.name
-  }
-
   test("expecting flag a be present or not and an parameter to be set") {
     val parser = ArgumentsParserBuilder (
-      MultipleArguments2(
+      MultipleArguments(
         Flag[Boolean]('f'),
         Parameter[String]('p')
       )
@@ -77,22 +65,6 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-p", "foo")) == Right((false, "foo")))
     assert(parser.parse(Array()) isLeft)
     assert(parser.parse(Array("-qux")) isLeft)
-  }
-
-  case class OptionalParameter[T](parameter: Parameter[T]) extends Argument[Option[T]] {
-    override def consume(args: Seq[String]): Result[(Seq[String], Option[T])] = {
-
-      val optionalResult = parameter.consume(args).right.flatMap {
-        case (rest: Seq[String], value: T) => Right(rest, Some(value))
-      }.left.flatMap {
-        case ArgumentExpected(a) => Right((args, None))
-        case e: Error => Left(e)
-      }
-
-      optionalResult
-    }
-
-    override def name: String = s"[ ${parameter.name} ]"
   }
 
   test("expecting a parameter to be present or not"){
