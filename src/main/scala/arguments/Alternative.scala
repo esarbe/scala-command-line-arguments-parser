@@ -9,7 +9,7 @@ final case class Alternative[S](alternatives: Argument[S]*)(implicit reads: Read
     results.toList match {
       case Nil => Left(MultipleErrors(errors.map(_.left.get)))
       case head :: Nil => head
-      case head :: rest :: Nil => Left(MutuallyExclusive(alternatives:_*))
+      case head :: rest => Left(MutuallyExclusive(alternatives:_*))
     }
 
   }
