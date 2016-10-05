@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 
 class ArgumentsSuite extends FunSuite {
 
-  implicit val stringReads: Reads[String] = new Reads[String] {
+  implicit val stringReads: Reads[String, String] = new Reads[String, String] {
     override def read(s: String): Result[String] = Right(s)
   }
 
