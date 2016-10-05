@@ -78,4 +78,30 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-v", "foo")) == Right(Some("foo")))
     assert(parser.parse(Array()) == Right(None))
   }
+
+  case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Reads[C, P]) extends Argument[P] {
+    override def consume(args: Seq[String]): Result[(Seq[String], P)] = ???
+
+    override def name: String = ???
+  }
+
+
+  test("expecting command and a flag") {
+
+    implicit val reader: Reads[Boolean, String] = new Reads[Boolean, String] {
+      override def read(s: Boolean): Result[String] =
+        if (s) Right("flag")
+        else Right("no-flag")
+    }
+
+    val parser = ArgumentsParserBuilder(
+      Command("command", Flag[Boolean]('f'))
+    ).build(Right(_))
+
+    assert(parser.parse(Array("command")) == Right("no-flag"))
+    assert(parser.parse(Array("command", "-f")) == Right("flag"))
+    assert(parser.parse(Array("command", "-g")) isLeft)
+    assert(parser.parse(Array()) isLeft)
+
+  }
 }
