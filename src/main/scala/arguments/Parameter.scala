@@ -1,6 +1,6 @@
 package arguments
 
-final case class Parameter[T: Reads](short: Char) extends Argument[T] {
+final case class Parameter[T](short: Char)(implicit reader: Reads[String, T]) extends Argument[T] {
 
   val notFound = Left(ArgumentExpected(this))
   val requiresValue = Left(ValueExpected(this))
@@ -15,8 +15,6 @@ final case class Parameter[T: Reads](short: Char) extends Argument[T] {
     case object ExpectingValue extends State
     case object DuplicateParameter extends State
     final case class FoundValue(value: String) extends State
-
-    val reader = implicitly[Reads[T]]
 
     val (rest, state) = args.foldLeft((List[String](), NotFound: State)){ case ((rest, state), curr) =>
       state match {

@@ -5,6 +5,6 @@ trait Argument[T] { self =>
   def name: String
 }
 
-trait Reads[T] {
-  def read(s: String): Result[T]
+trait Reads[I, O] {
+  def read(s: I): Result[O]
 }
