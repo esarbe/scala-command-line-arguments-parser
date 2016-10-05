@@ -36,7 +36,7 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
     value.right.map { (rest, _)}
   }
 
-  override def name: String = c.toString
+  override def name: String = s"[ $c ]"
 
   private def isFlagPresent(arg: String): Boolean = {
     arg.startsWith("-") && !arg.startsWith("--") && arg.contains(c)
