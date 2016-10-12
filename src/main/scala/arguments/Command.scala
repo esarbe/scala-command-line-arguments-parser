@@ -1,5 +1,11 @@
 package arguments
 
+case object NoArgument extends Argument[Unit] {
+  override def consume(args: Seq[String]): Result[(Seq[String], Unit)] = Right((args, ()))
+
+  override def name: String = ""
+}
+
 case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Reads[C, P]) extends Argument[P] {
   sealed trait State
   case object NotFound extends State
