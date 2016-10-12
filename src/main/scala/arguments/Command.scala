@@ -33,3 +33,11 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
 
   override def name: String = s"$cName ${child.name}"
 }
+
+object Command {
+  def build[C, P](identifier: String, child: Argument[C])(builder: C => P): Command[C, P] = {
+    new Command[C, P](identifier, child)(new Reads[C, P]{
+      override def read(s: C): Result[P] = Right(builder(s))
+    })
+  }
+}
