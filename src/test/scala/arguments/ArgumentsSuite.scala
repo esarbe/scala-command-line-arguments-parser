@@ -85,15 +85,19 @@ class ArgumentsSuite extends FunSuite {
     case object FooAction extends Action
     case object BarAction extends Action
 
+    val barCommand = Command.build("bar", NoArgument)( (Unit) => BarAction)
+    val fooCommand = Command.build("foo", NoArgument)( (Unit) => FooAction)
+
     val parser = ArgumentsParserBuilder(
       Alternative(
-        Command.build("foo", NoArgument)( (Unit) => FooAction),
-        Command.build("bar", NoArgument)( (Unit) => BarAction)
+        fooCommand,
+        barCommand
       )
     ).build(Right(_))
 
     assert(parser.parse(Array("foo")) === Right(FooAction))
     assert(parser.parse(Array("bar")) === Right(BarAction))
+    assert(parser.parse(Array("foo", "bar")) === Left(MutuallyExclusive(fooCommand, barCommand)))
     assert(parser.parse(Array("-foo")) isLeft)
   }
 
