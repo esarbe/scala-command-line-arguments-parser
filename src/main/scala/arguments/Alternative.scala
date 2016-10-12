@@ -2,7 +2,7 @@ package arguments
 
 import EitherUtil._
 
-final case class Alternative[S](alternatives: Argument[S]*)(implicit reads: Reads[String, S]) extends Argument[S] {
+final case class Alternative[S](alternatives: Argument[S]*) extends Argument[S] {
   override def consume(args: Seq[String]): Result[(Seq[String], S)] = {
     val (errors, results) = alternatives.map(_.consume(args)).segregate
 
