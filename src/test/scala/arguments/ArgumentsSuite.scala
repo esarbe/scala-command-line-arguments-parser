@@ -80,6 +80,23 @@ class ArgumentsSuite extends FunSuite {
   }
 
 
+  test("expecting one of two commands") {
+    trait Action
+    case object FooAction extends Action
+    case object BarAction extends Action
+
+    val parser = ArgumentsParserBuilder(
+      Alternative(
+        Command.build("foo", NoArgument)( (Unit) => FooAction),
+        Command.build("bar", NoArgument)( (Unit) => BarAction)
+      )
+    ).build(Right(_))
+
+    assert(parser.parse(Array("foo")) === Right(FooAction))
+    assert(parser.parse(Array("bar")) === Right(BarAction))
+    assert(parser.parse(Array("-foo")) isLeft)
+  }
+
   test("expecting command and a flag") {
 
     implicit val reader: Reads[Boolean, String] = new Reads[Boolean, String] {
