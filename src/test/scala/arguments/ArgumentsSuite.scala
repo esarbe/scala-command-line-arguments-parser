@@ -8,6 +8,15 @@ class ArgumentsSuite extends FunSuite {
     override def read(s: String): Result[String] = Right(s)
   }
 
+  implicit val int2IntReads: Reads[String, Int] = new Reads[String, Int] {
+    import scala.util.{Try, Success, Failure}
+
+    override def read(s: String): Result[Int] = Try(s.toInt) match {
+      case Success(value) => Right(value)
+      case Failure(thrown) => Left(CouldNotReadValue(s, thrown))
+    }
+  }
+
   implicit val booleanFlagger: Flags[Boolean] = new Flags[Boolean] {
     override def flags(present: Boolean): Result[Boolean] = Right(present)
   }
