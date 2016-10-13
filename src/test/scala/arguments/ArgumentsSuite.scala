@@ -151,5 +151,6 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("1")) isLeft)
     assert(parser.parse(Array("1", "goo")) isLeft)
     assert(parser.parse(Array("1", "2")) === Right((1,2)))
+    assert(parser.parse(Array("1", "goo", "foo")) isLeft)
   }
 }
