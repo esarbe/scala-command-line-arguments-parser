@@ -3,7 +3,7 @@ package arguments
 case object NoArgument extends Argument[Unit] {
   override def consume(args: Seq[String]): Result[(Seq[String], Unit)] = Right((args, ()))
 
-  override def name: String = ""
+  override def usage: String = ""
 }
 
 case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Reads[C, P]) extends Argument[P] {
@@ -31,7 +31,7 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
     }
   }
 
-  override def name: String = s"$cName ${child.name}"
+  override def usage: String = s"$cName ${child.usage}"
 }
 
 object Command {

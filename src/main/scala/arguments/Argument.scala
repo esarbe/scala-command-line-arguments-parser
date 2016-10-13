@@ -2,7 +2,7 @@ package arguments
 
 trait Argument[+T] { self =>
   def consume(args: Seq[String]): Result[(Seq[String], T)]
-  def name: String
+  def usage: String
 }
 
 trait Reads[I, O] {

@@ -9,5 +9,5 @@ case class MultipleArguments[A, B](first: Argument[A], second: Argument[B]) exte
     }
   }
 
-  override def name: String = first.name + ", " + second.name
+  override def usage: String = first.usage + ", " + second.usage
 }

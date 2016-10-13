@@ -13,5 +13,5 @@ case class OptionalParameter[T](parameter: Parameter[T]) extends Argument[Option
     optionalResult
   }
 
-  override def name: String = s"[ ${parameter.name} ]"
+  override def usage: String = s"[ ${parameter.usage} ]"
 }

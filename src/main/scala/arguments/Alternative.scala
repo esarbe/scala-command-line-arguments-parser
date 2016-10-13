@@ -13,5 +13,5 @@ final case class Alternative[S](alternatives: Argument[S]*) extends Argument[S] 
     }
 
   }
-  override def name: String = s"[ ${alternatives.map(_.name).mkString(" | ")} ]"
+  override def usage: String = s"[ ${alternatives.map(_.usage).mkString(" | ")} ]"
 }

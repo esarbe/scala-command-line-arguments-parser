@@ -14,5 +14,6 @@ final case class ArgumentsParser[I, O](argument: Argument[I], builder: Function[
       else builder(value)
     }
   }
+  def usage: String = argument.usage
 }
 

@@ -7,7 +7,7 @@ final case class Parameter[T](short: Char)(implicit reader: Reads[String, T]) ex
   val presentMultipleTimes = Left(ArgumentPresentMultipleTimes(this))
   val paramKey = s"-$short"
 
-  override def name: String = s"-$short"
+  override def usage: String = s"-$short"
   override def consume(args: Seq[String]): Result[(Seq[String], T)] = {
 
     sealed trait State
