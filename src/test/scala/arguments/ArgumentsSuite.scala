@@ -119,4 +119,25 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array()) isLeft)
 
   }
+
+  test("expecting a positional argument") {
+
+    case class PositionalArgument[T](aName: String)(implicit reads: Reads[String, T]) extends Argument[T]{
+      override def consume(args: Seq[String]): Result[(Seq[String], T)] = ???
+
+      override def usage: String = ???
+    }
+
+    val parser = ArgumentsParserBuilder(
+      MultipleArguments(
+        PositionalArgument[Int]("first"),
+        PositionalArgument[Int]("second")
+      )
+    ).build(Right(_))
+
+    assert(parser.parse(Array("bar")) isLeft)
+    assert(parser.parse(Array("1")) isLeft)
+    assert(parser.parse(Array("1", "goo")) isLeft)
+    assert(parser.parse(Array("1", "2")) === Right((1,2)))
+  }
 }
