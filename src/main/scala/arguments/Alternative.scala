@@ -7,8 +7,8 @@ final case class Alternative[S](alternatives: Argument[S]*) extends Argument[S] 
     val (errors, results) = alternatives.map(_.consume(args)).segregate
 
     results.toList match {
-      case Nil => Left(MultipleErrors(errors.map(_.left.get)))
-      case head :: Nil => head
+      case Nil => Left(MultipleErrors(errors))
+      case head :: Nil => Right(head)
       case head :: rest => Left(MutuallyExclusive(alternatives:_*))
     }
 
