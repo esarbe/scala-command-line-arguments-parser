@@ -144,4 +144,21 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("1", "2")) === Right((1,2)))
     assert(parser.parse(Array("1", "goo", "foo")) isLeft)
   }
+
+  test("expecting a optional parameter and a positional arguments") {
+
+    val parser = ArgumentsParserBuilder(
+      MultipleArguments(
+        OptionalParameter(Parameter[String]('f')),
+        PositionalArgument[Int]("second")
+      )
+    ).build(Right(_))
+
+    assert(parser.parse(Array("bar")) isLeft)
+    assert(parser.parse(Array("1")) === Right((None, 1)))
+    assert(parser.parse(Array("1", "-f", "bar")) === Right((Some("bar"), 1)))
+
+    assert(parser.parse(Array("-f", "bar")) isLeft)
+    assert(parser.parse(Array("1", "goo", "foo")) isLeft)
+  }
 }
