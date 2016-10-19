@@ -175,6 +175,8 @@ class ArgumentsSuite extends FunSuite {
     ).build(Right(_))
 
     assert(parser.parse(Array("1", "2", "3")) === Right(Seq(1,2,3)))
+    assert(parser.parse(Array("foo", "qux", "bar")) isLeft)
+    assert(parser.parse(Array("-1", "2", "bar")) isLeft)
 
   }
 }
