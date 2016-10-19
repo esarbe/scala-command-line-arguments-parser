@@ -161,4 +161,20 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("-f", "bar")) isLeft)
     assert(parser.parse(Array("1", "goo", "foo")) isLeft)
   }
+
+  case class TrailingArgument[T](name: String)(implicit reads: Reads[String, T]) extends Argument[Seq[T]] {
+
+    override def consume(args: Seq[String]): Result[(Seq[String], Seq[T])] = ???
+
+    override def usage: String = ???
+  }
+
+  test("expecting a trailing argument of type int") {
+    val parser = ArgumentsParserBuilder(
+      TrailingArgument[Int]("numbers")
+    ).build(Right(_))
+
+    assert(parser.parse(Array("1", "2", "3")) === Right(Seq(1,2,3)))
+
+  }
 }
