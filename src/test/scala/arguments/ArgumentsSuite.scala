@@ -126,7 +126,6 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("command", "-f")) == Right("flag"))
     assert(parser.parse(Array("command", "-g")) isLeft)
     assert(parser.parse(Array()) isLeft)
-
   }
 
   test("expecting two positional arguments") {
@@ -163,10 +162,18 @@ class ArgumentsSuite extends FunSuite {
   }
 
   case class TrailingArgument[T](name: String)(implicit reads: Reads[String, T]) extends Argument[Seq[T]] {
+    import EitherSyntax._
 
-    override def consume(args: Seq[String]): Result[(Seq[String], Seq[T])] = ???
+    override def consume(args: Seq[String]): Result[(Seq[String], Seq[T])] = {
+      val foo = args.map(reads.read)
 
-    override def usage: String = ???
+      val (errors, successes) = foo.segregate
+
+      if (errors.isEmpty) Right((Seq.empty[String], successes))
+      else Left(MultipleErrors(errors))
+    }
+
+    override def usage: String = "$name..."
   }
 
   test("expecting a trailing argument of type int") {
@@ -177,6 +184,5 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("1", "2", "3")) === Right(Seq(1,2,3)))
     assert(parser.parse(Array("foo", "qux", "bar")) isLeft)
     assert(parser.parse(Array("-1", "2", "bar")) isLeft)
-
   }
 }
