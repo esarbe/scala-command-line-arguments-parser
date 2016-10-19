@@ -1,10 +1,18 @@
 package arguments
 
 object EitherSyntax {
-  implicit def eitherOps[A, B](eithers: Seq[Either[A, B]]): EitherOps[A, B] = new EitherOps(eithers)
+  implicit def toEithersOps[A, B](eithers: Seq[Either[A, B]]): EithersOps[A, B] = new EithersOps(eithers)
+  implicit def toEitherOps[A, B](either: Either[A, B]): EitherOps[A, B] = new EitherOps(either)
 }
 
-class EitherOps[A, B](val eithers: Seq[Either[A, B]]) extends AnyVal {
+class EitherOps[A, B](val either: Either[A, B]) extends AnyVal {
+  def map[C](f: B => C): Either[A, C] = either match {
+    case Right(right) => Right(f(right))
+    case Left(left) => Left(left)
+  }
+}
+
+class EithersOps[A, B](val eithers: Seq[Either[A, B]]) extends AnyVal {
 
   import scala.collection.generic.CanBuildFrom
 
