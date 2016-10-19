@@ -3,18 +3,16 @@ package arguments
 import org.scalatest.FunSuite
 
 class ArgumentsSuite extends FunSuite {
+  import scala.util.Try
 
   implicit val stringReads: Reads[String, String] = new Reads[String, String] {
-    override def read(s: String): Result[String] = Right(s)
+    override def read(s: String): Try[String] = Try(s)
   }
 
   implicit val int2IntReads: Reads[String, Int] = new Reads[String, Int] {
-    import scala.util.{Try, Success, Failure}
 
-    override def read(s: String): Result[Int] = Try(s.toInt) match {
-      case Success(value) => Right(value)
-      case Failure(thrown) => Left(CouldNotReadValue(s, thrown))
-    }
+
+    override def read(s: String): Try[Int] = Try(s.toInt)
   }
 
   implicit val booleanFlagger: Flags[Boolean] = new Flags[Boolean] {
@@ -113,9 +111,11 @@ class ArgumentsSuite extends FunSuite {
   test("expecting command and a flag") {
 
     implicit val reader: Reads[Boolean, String] = new Reads[Boolean, String] {
-      override def read(s: Boolean): Result[String] =
-        if (s) Right("flag")
-        else Right("no-flag")
+      import scala.util.Success
+
+      override def read(s: Boolean): Try[String] =
+        if (s) Success("flag")
+        else Success("no-flag")
     }
 
     val parser = ArgumentsParserBuilder(
@@ -163,9 +163,10 @@ class ArgumentsSuite extends FunSuite {
 
   case class TrailingArgument[T](name: String)(implicit reads: Reads[String, T]) extends Argument[Seq[T]] {
     import EitherSyntax._
+    import TrySyntax._
 
     override def consume(args: Seq[String]): Result[(Seq[String], Seq[T])] = {
-      val foo = args.map(reads.read)
+      val foo = args.map(r => reads.read(r).toEither(CouldNotReadValue(r, _)))
 
       val (errors, successes) = foo.segregate
 

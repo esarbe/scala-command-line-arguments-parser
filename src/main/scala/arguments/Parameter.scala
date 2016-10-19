@@ -2,6 +2,9 @@ package arguments
 
 final case class Parameter[T](short: Char)(implicit reader: Reads[String, T]) extends Argument[T] {
 
+  import TrySyntax._
+  import EitherSyntax._
+
   val notFound = Left(ArgumentExpected(this))
   val requiresValue = Left(ValueExpected(this))
   val presentMultipleTimes = Left(ArgumentPresentMultipleTimes(this))
@@ -32,11 +35,11 @@ final case class Parameter[T](short: Char)(implicit reader: Reads[String, T]) ex
     val result = state match {
       case NotFound => notFound
       case ExpectingValue => requiresValue
-      case FoundValue(value) => reader.read(value)
+      case FoundValue(value) => reader.read(value).toEither(CouldNotReadValue(value, _))
       case DuplicateParameter => presentMultipleTimes
     }
 
-    result.right.map { value =>
+    result.map { value =>
       (rest, value)
     }
   }

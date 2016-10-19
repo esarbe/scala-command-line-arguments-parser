@@ -6,5 +6,6 @@ trait Argument[+T] { self =>
 }
 
 trait Reads[I, O] {
-  def read(s: I): Result[O]
+  import scala.util.Try
+  def read(s: I): Try[O]
 }

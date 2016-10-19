@@ -1,5 +1,10 @@
 package arguments
 
+import TrySyntax._
+import EitherSyntax._
+
+import scala.util.Try
+
 case object NoArgument extends Argument[Unit] {
   override def consume(args: Seq[String]): Result[(Seq[String], Unit)] = Right((args, ()))
 
@@ -24,7 +29,8 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
     state match {
       case NotFound => Left(ArgumentExpected(this))
       case Found => child.consume(after).right.flatMap { case (remaining, value) =>
-        reads.read(value).right.map { readValue =>
+
+        reads.read(value).toEither(CouldNotReadValue(value, _)).map { readValue =>
           (before ++ remaining, readValue)
         }
       }
@@ -37,7 +43,7 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
 object Command {
   def build[C, P](identifier: String, child: Argument[C])(builder: C => P): Command[C, P] = {
     new Command[C, P](identifier, child)(new Reads[C, P]{
-      override def read(s: C): Result[P] = Right(builder(s))
+      override def read(s: C): Try[P] = Try(builder(s))
     })
   }
 }
