@@ -129,7 +129,7 @@ class ArgumentsSuite extends FunSuite {
 
   }
 
-  test("expecting a positional argument") {
+  test("expecting two positional arguments") {
 
     val parser = ArgumentsParserBuilder(
       MultipleArguments(
