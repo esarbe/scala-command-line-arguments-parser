@@ -5,19 +5,10 @@ import org.scalatest.FunSuite
 class ArgumentsSuite extends FunSuite {
   import scala.util.Try
 
-  implicit val stringReads: Reads[String, String] = new Reads[String, String] {
-    override def read(s: String): Try[String] = Try(s)
-  }
+  implicit val stringReads: Reads[String, String] = Reads(util.Success(_))
+  implicit val intReads: Reads[String, Int] = Reads(s => Try(s.toInt))
+  implicit val doubleReads: Reads[String, Double] = Reads(s => Try(s.toDouble))
 
-  implicit val int2IntReads: Reads[String, Int] = new Reads[String, Int] {
-
-
-    override def read(s: String): Try[Int] = Try(s.toInt)
-  }
-
-  implicit val booleanFlagger: Flags[Boolean] = new Flags[Boolean] {
-    override def flags(present: Boolean): Result[Boolean] = Right(present)
-  }
 
   test("expecting a single parameter") {
     val parser = ArgumentsParser(
