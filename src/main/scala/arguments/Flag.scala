@@ -1,17 +1,18 @@
 package arguments
 
-case class Flag[T: Flags](c: Char) extends Argument[T] {
+case class Flag[T](c: Char, defaults: (T, T)) extends Argument[T] {
 
-  sealed trait State
-  case object NotFound extends State
-  case object Found extends State
-  case object DuplicateFlag extends State
+  val (ifFound, ifNotFound) = defaults
 
   val presentMultipleTimes = Left(ArgumentPresentMultipleTimes(this))
 
-  val flagger = implicitly[Flags[T]]
-
   override def consume(args: Seq[String]): Result[(Seq[String], T)] = {
+
+    sealed trait State
+    case object NotFound extends State
+    case object Found extends State
+    case object DuplicateFlag extends State
+
     val (rest, state) = args.foldLeft((Seq[String](), NotFound: State)) { case ((rest, state), curr) =>
       state match {
         case NotFound =>
@@ -28,8 +29,8 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
     }
 
     val value = state match {
-      case Found => flagger.flags(true)
-      case NotFound => flagger.flags(false)
+      case Found => Right(ifFound)
+      case NotFound => Right(ifNotFound)
       case DuplicateFlag => presentMultipleTimes
     }
 
@@ -47,8 +48,4 @@ case class Flag[T: Flags](c: Char) extends Argument[T] {
     if (remaining == "-") ""
     else remaining
   }
-}
-
-trait Flags[T] {
-  def flags(present: Boolean): Result[T]
 }

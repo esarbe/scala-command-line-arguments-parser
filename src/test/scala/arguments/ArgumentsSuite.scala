@@ -41,10 +41,9 @@ class ArgumentsSuite extends FunSuite {
 
   test("expecting flag to be present or not") {
 
-    val parser = ArgumentsParser (
-      Flag[Boolean]('f'),
-      builder = (b: Boolean) => Right(b)
-    )
+    val parser = ArgumentsParserBuilder (
+      Flag('f', (true, false))
+    ).build( Right(_))
 
     assert(parser.parse(Array("-f")) == Right(true))
     assert(parser.parse(Array()) == Right(false))
@@ -54,7 +53,7 @@ class ArgumentsSuite extends FunSuite {
   test("expecting flag a be present or not and an parameter to be set") {
     val parser = ArgumentsParserBuilder (
       MultipleArguments(
-        Flag[Boolean]('f'),
+        Flag('f', (true, false)),
         Parameter[String]('p')
       )
     ).build { Right(_) }
@@ -110,7 +109,7 @@ class ArgumentsSuite extends FunSuite {
     }
 
     val parser = ArgumentsParserBuilder(
-      Command("command", Flag[Boolean]('f'))
+      Command("command", Flag('f', (true, false)))
     ).build(Right(_))
 
     assert(parser.parse(Array("command")) == Right("no-flag"))
