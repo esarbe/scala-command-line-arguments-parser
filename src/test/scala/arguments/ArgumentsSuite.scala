@@ -176,4 +176,30 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("foo", "qux", "bar")) isLeft)
     assert(parser.parse(Array("-1", "2", "bar")) isLeft)
   }
+  test("expecting a command with two positional and trailing arguments or a command with trailing arguments") {
+    trait Action
+    case class FooAction(tuple: (Double, Double), list: List[Int]) extends Action
+    case class BarAction(names: String*)
+
+
+    val parser = ArgumentsParserBuilder(
+      Alternative(
+        Command.build("foo", MultipleArguments(
+          PositionalArgument[Double]("first"),
+          MultipleArguments(
+            PositionalArgument[Double]("second"),
+            TrailingArgument[Int]("numbers")
+          )
+        )){ case (first, (second, list)) => FooAction((first, second), list.toList)},
+
+        Command.build("bar", TrailingArgument[String]("names")){ case names => BarAction(names:_*)}
+
+      )
+    ).build { Right(_) }
+
+    assert(parser.parse(Array("foo", "1.0d", "2.0d", "1", "2", "3", "4")) === Right(FooAction((1.0, 2.0), List(1,2,3,4))))
+    assert(parser.parse(Array("bar", "ay", "bee", "cee", "dee")) === Right(BarAction("ay", "bee", "cee", "dee")))
+    assert(parser.parse(Array("qux", "1.0d", "2.0d", "1", "2", "3", "4")) isLeft)
+
+  }
 }
