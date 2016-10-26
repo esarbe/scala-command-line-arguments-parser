@@ -9,6 +9,7 @@ package object arguments {
   case class CouldNotReadValue[T](value: T, throwable: Throwable) extends Error
   case class MultipleErrors(errors: Seq[Error]) extends Error
   case class MutuallyExclusive(arguments: Argument[_]*) extends Error
+  case class HelpRequested(argument: Argument[_]) extends Error
 
   type Result[A] = Either[Error, A]
 

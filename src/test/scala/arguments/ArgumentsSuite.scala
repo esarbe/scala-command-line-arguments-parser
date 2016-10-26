@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 
 class ArgumentsSuite extends FunSuite {
   import scala.util.Try
+  import EitherSyntax._
 
   implicit val stringReads: Reads[String, String] = Reads(util.Success(_))
   implicit val intReads: Reads[String, Int] = Reads(s => Try(s.toInt))
@@ -200,6 +201,25 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("foo", "1.0d", "2.0d", "1", "2", "3", "4")) === Right(FooAction((1.0, 2.0), List(1,2,3,4))))
     assert(parser.parse(Array("bar", "ay", "bee", "cee", "dee")) === Right(BarAction("ay", "bee", "cee", "dee")))
     assert(parser.parse(Array("qux", "1.0d", "2.0d", "1", "2", "3", "4")) isLeft)
+    assert(parser.parse(Array("foo", "1.0d", "2.0d", "bar", "ay", "bee")) isLeft)
+  }
 
+  test("with help") {
+    trait Action
+    case object FooAction extends Action
+    case object BarAction extends Action
+
+    val fooCommand = Command.build("foo", NoArgument){ (Unit) => FooAction}
+    val barCommand = Command.build("bar", NoArgument){ (Unit) => BarAction}
+    val fooCommandOrBarCommand = Alternative( barCommand, fooCommand )
+
+    val parser = ArgumentsParserBuilder(
+      fooCommandOrBarCommand
+    ).build { Right(_) }
+
+    assert(parser.parse(Array("-h","foo", "-h")) === Left(HelpRequested(fooCommandOrBarCommand)))
+    assert(parser.parse(Array("foo", "-h")) === Right(FooAction))
+    assert(parser.parse(Array("bar", "ay", "bee", "cee", "dee")) === Right(BarAction))
+    assert(parser.parse(Array("qux", "1.0d", "2.0d", "1", "2", "3", "4")) isLeft)
   }
 }
