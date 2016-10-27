@@ -6,8 +6,14 @@ object EitherSyntax {
 }
 
 class EitherOps[A, B](val either: Either[A, B]) extends AnyVal {
+
   def map[C](f: B => C): Either[A, C] = either match {
     case Right(right) => Right(f(right))
+    case Left(left) => Left(left)
+  }
+
+  def flatMap[C](f: B => Either[A, C]): Either[A, C] = either match {
+    case Right(right) => f(right)
     case Left(left) => Left(left)
   }
 }
