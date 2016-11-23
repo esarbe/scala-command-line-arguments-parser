@@ -73,40 +73,26 @@ class ParserSuite extends FunSuite {
 
   def letter = plus(lower, upper)
   def alphanum = plus(letter, digit)
+  def string(s: String): Parser[String] = s match {
+    case "" => result("")
+    case x + xs =>
+      char(x).flatMap { c =>
+        string(xs).flatMap { s =>
+          result(c + s)
+        }
+      }
+  }
 
   def word: Parser[String] = {
     val nonEmptyWord =
       letter.flatMap { x =>
         word.flatMap { xs =>
-          result((x :: xs.toList).mkString)
+          result(x + xs)
         }
       }
 
     plus(nonEmptyWord, result(""))
   }
-
-  def word2: Parser[String] = { input =>
-
-    val nonEmptyWord = { input: String =>
-      val cRes = input.toList match {
-        case x :: xs if x >= 'a' && x <= 'Z' => List((x, xs.mkString))
-        case Nil => Nil
-      }
-
-      cRes.flatMap { case (cRes, cRem) =>
-        val wRes = word2(cRem)
-
-        wRes.flatMap { case (wRes, wRem) =>
-
-          List(((cRes :: wRes.toList).mkString, wRem))
-        }
-      }
-    }
-
-    nonEmptyWord(input) ++ result("")(input)
-  }
-
-
 
   test("""sat(x = 'x')("x")"""){
     assert(sat(_ == 'x')("x") === List(('x', "")))
@@ -128,11 +114,11 @@ class ParserSuite extends FunSuite {
   }
 
   test("a word") {
-    assert(word("one two three") === List(("one", "two three"), ("on", "e two three"), ("o", "ne two three"), ("","one two three")))
+    assert(word("one two three").toSet === Set(("one", " two three"), ("on", "e two three"), ("o", "ne two three"), ("","one two three")))
   }
 
-  test("a word is a word") {
-    assert(word("one two three") === word2("one two three"))
+  test("a string") {
+    println("string: " + string("foo")("foo bar baz"))
   }
 
 
