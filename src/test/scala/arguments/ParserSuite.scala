@@ -2,17 +2,26 @@ package arguments
 
 import org.scalatest.FunSuite
 
-import scala.collection.immutable.::
 
 class ParserSuite extends FunSuite {
 
   type Parser[A] = String => List[(A, String)]
+
+  object + {
+    def unapply[A](xs: String): Option[(Char, String)] =
+      if (xs.isEmpty) None
+      else Some((xs.head, xs.tail))
+  }
 
   implicit class ParserOps[A](p: Parser[A]) {
     def flatMap[B](f: A => Parser[B]) = {
       input: String =>
         val fTupled = (f(_: A)(_: String)).tupled
         p(input).flatMap(fTupled)
+    }
+
+    def map[B](f: A => B): Parser[B] = {
+      flatMap(a => result(f(a)))
     }
   }
 
@@ -24,11 +33,9 @@ class ParserSuite extends FunSuite {
     input: String => Nil
   }
 
-  def item: Parser[Char] = { input =>
-    input.toList match {
-      case x :: xs => List((x, xs.mkString))
-      case Nil => Nil
-    }
+  def item: Parser[Char] = {
+    case "" => Nil
+    case x + xs => List((x, xs))
   }
 
   def sat(p: Char => Boolean): Parser[Char] = {
