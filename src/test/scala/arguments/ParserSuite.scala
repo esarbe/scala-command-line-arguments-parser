@@ -83,6 +83,16 @@ class ParserSuite extends FunSuite {
       }
   }
 
+  def many[T](p: Parser[T]): Parser[List[T]] = {
+    plus(p.flatMap { x =>
+      many(p).map { xs =>
+        x :: xs
+      }
+    }, result(Nil))
+  }
+
+  def word2 = many(letter).map { _.mkString }
+
   def word: Parser[String] = {
     val nonEmptyWord =
       letter.flatMap { x =>
@@ -117,8 +127,12 @@ class ParserSuite extends FunSuite {
     assert(word("one two three").toSet === Set(("one", " two three"), ("on", "e two three"), ("o", "ne two three"), ("","one two three")))
   }
 
+  test("another word") {
+    assert(word2("one two three").toSet === Set(("one", " two three"), ("on", "e two three"), ("o", "ne two three"), ("","one two three")))
+  }
+
   test("a string") {
-    println("string: " + string("foo")("foo bar baz"))
+    assert(string("foo")("foo bar baz") === List(("foo", " bar baz")))
   }
 
 
