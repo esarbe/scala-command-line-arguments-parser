@@ -20,6 +20,17 @@ class ParserSuite extends FunSuite {
         p(input).flatMap(fTupled)
     }
 
+    def ap[B](af: Parser[A => B]): Parser[B] = { input =>
+      val foo = af(input)
+
+      foo.flatMap { case (f, v) =>
+        val pvs = p(v)
+        pvs.map { case (pf, pv) =>
+          (f(pf), pv)
+        }
+      }
+    }
+
     def map[B](f: A => B): Parser[B] = {
       flatMap(a => result(f(a)))
     }
@@ -30,7 +41,7 @@ class ParserSuite extends FunSuite {
   }
 
   def zero: Parser[Nothing] = {
-    input: String => Nil
+    _: String => Nil
   }
 
   def item: Parser[Char] = {
@@ -47,20 +58,14 @@ class ParserSuite extends FunSuite {
 
   def char(c: Char): Parser[Char] = sat( _ == c )
 
-  def digit: Parser[Char] = sat( x => '0' <= x && x <= '9')
-  def upper: Parser[Char] = sat( x => 'A' <= x && x <= 'Z' )
-  def lower: Parser[Char] = sat( x => 'a' <= x && x <= 'z')
+  def digit: Parser[Char] = sat( _.isDigit )
+  def upper: Parser[Char] = sat( _.isUpper )
+  def lower: Parser[Char] = sat( _.isLower )
+  def whitespace: Parser[Char] = sat(c => c.isWhitespace || c.isSpaceChar)
 
   def plus[A](u: Parser[A], v: Parser[A]): Parser[A] = { input: String =>
     u(input) ++ v(input)
   }
-
-  def twoLowers =
-    lower.flatMap { c0 =>
-      lower.flatMap { c1 =>
-        result(List(c0, c1).mkString)
-      }
-    }
 
   def lowers =
     lower.flatMap { c0 =>
@@ -91,6 +96,14 @@ class ParserSuite extends FunSuite {
     }, result(Nil))
   }
 
+  def many1[T](p: Parser[T]): Parser[List[T]] = {
+    p.flatMap { x =>
+      many(p).map { xs =>
+        x :: xs
+      }
+    }
+  }
+
   def word2 = many(letter).map { _.mkString }
 
   def word: Parser[String] = {
@@ -113,6 +126,13 @@ class ParserSuite extends FunSuite {
   }
 
   test("parser combinator") {
+    def twoLowers =
+      lower.flatMap { c0 =>
+        lower.flatMap { c1 =>
+          result(List(c0, c1).mkString)
+        }
+      }
+
     twoLowers("abcd") === List(("ab", "cd"))
   }
 
@@ -131,9 +151,24 @@ class ParserSuite extends FunSuite {
     assert(word2("one two three").toSet === Set(("one", " two three"), ("on", "e two three"), ("o", "ne two three"), ("","one two three")))
   }
 
+  test("many parser") {
+    val p = many(char('a'))
+
+    assert(p("a").toSet === Set((List('a'), ""), (Nil, "a")))
+  }
+
+  test("many1 parser") {
+    val p = many1(char('a'))
+
+    assert(p("a").toSet === Set((List('a'), "")))
+  }
+
   test("a string") {
     assert(string("foo")("foo bar baz") === List(("foo", " bar baz")))
   }
 
+  test("mandatory argument") {
+     string("--foo")
 
+  }
 }
