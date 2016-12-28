@@ -11,26 +11,31 @@ features - more and more sophisticated ones. Since this is a learning project, I
 the most part. Only if I notice that I start duplicating large parts of a library will I resort to include it in the
 project.
 
+The end-product - if there will ever be such a thing - should be a nice, compact and versatile Scala library for command
+line arguments parsing.
+
 ## The problem
-Everone using command line applications has used them; arguments. Those funny additional letters and word, often
-(but not always) accompanied by hyphens, that controll the runtime behaviour of so many of our favorite applications.
-Git has them, ls has them, only ```exit``` seems to be able to exist without their comforting promise of variation.
+Everyone using command line applications has used them; arguments. Those funny additional letters and word, often
+(but not always) accompanied by hyphens, that control the runtime behaviour of so many of our favorite applications.
+Git has them, ls has them, only ```exit```, ```true``` and ```false``` seems to be able to exist without
+their comforting promise of variation.
 
-There is no common format for command line arguments, however. There are are libraries for all programming languages -
- I bet there's even one for Visual Basic - but all of them vary in subtle ways. And since each application with command
-line arguments has different argument names and different payload formats, each command line argument implementation
-forms a separate little language. So, a command line parser library is not actually implementing a specific syntax,
-rather is allows the definition of a (configuration) language.
-
-Let's have a look at some of the existing command line argument languages:
-
-
-Grammar
-```
-L   -->
-L   --> ARG
-ARG --> COMMAND
-ARG --> PARAM
-ARG -->
+There is no common format for command line arguments, however. Though there are are libraries for all of mankind's
+programming languages - I bet there's even one for Visual Basic - but all of them vary in subtle ways. And since each
+application with command  line arguments has different argument names and different payload formats, each command line
+argument implementation forms a separate little language. So, a command line parser library is not actually implementing
+a specific syntax, rather it provides the tools for the the definition of a (configuration) language.
 
 ```
+L     ::= flags | flag | command | arguments
+command ::= command-names
+flags ::= `-` flag
+
+```
+
+
+
+## The native approach
+Before trying to be clever, let's try something simple: A traditional, class based approach whe
+
+## The monadic approach
