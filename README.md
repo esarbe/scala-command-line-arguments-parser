@@ -24,7 +24,7 @@ There is no common format for command line arguments, however. Though there are 
 programming languages - I bet there's even one for Visual Basic - but all of them vary in subtle ways. And since each
 application with command  line arguments has different argument names and different payload formats, each command line
 argument implementation forms a separate little language. So, a command line parser library is not actually implementing
-a specific syntax, rather it provides the tools for the the definition of a (configuration) language.
+a specific language, rather it provides the tools for the the definition of a (configuration) language.
 
 ```
 L     ::= flags | flag | command | arguments
@@ -34,8 +34,15 @@ flags ::= `-` flag
 ```
 
 
+## The naive approach ##
+Before trying to be clever, let's try something simple: A traditional, class based approach where each class is
+responsible for one type of element in our language. 
+The central element of our approach is the method 
+``` def consume(args: Seq[String]): Either[Error, (Seq[String], T)] ```.
+It's purpose is to receive a sequence of strings, consume as many elements of the sequence it can and then
+return the remaining sequence, together with a object representing the result. In the error case, an error object
+is returned instead.
 
-## The native approach
-Before trying to be clever, let's try something simple: A traditional, class based approach whe
+
 
 ## The monadic approach
