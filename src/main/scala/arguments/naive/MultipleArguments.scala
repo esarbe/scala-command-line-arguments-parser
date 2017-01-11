@@ -1,5 +1,4 @@
-package arguments
-
+package arguments.naive
 
 case class MultipleArguments[A, B](first: Argument[A], second: Argument[B]) extends Argument[(A, B)] {
 

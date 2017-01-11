@@ -1,4 +1,4 @@
-package arguments
+package arguments.naive
 
 case class OptionalParameter[T](parameter: Parameter[T]) extends Argument[Option[T]] {
   override def consume(args: Seq[String]): Result[(Seq[String], Option[T])] = {

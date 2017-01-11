@@ -1,4 +1,4 @@
-package arguments
+package arguments.naive
 
 trait Argument[+T] { self =>
   def consume(args: Seq[String]): Result[(Seq[String], T)]

@@ -1,9 +1,11 @@
-package arguments
+package arguments.naive
+
+import arguments._
 
 final case class Parameter[T](short: Char)(implicit reader: Reads[String, T]) extends Argument[T] {
 
-  import TrySyntax._
   import EitherSyntax._
+  import TrySyntax._
 
   val notFound = Left(ArgumentExpected(this))
   val requiresValue = Left(ValueExpected(this))

@@ -1,10 +1,10 @@
-package arguments
+package arguments.naive
 
+import arguments.TrySyntax
 import org.scalatest.FunSuite
 
 class ArgumentsSuite extends FunSuite {
   import scala.util.Try
-  import EitherSyntax._
 
   implicit val stringReads: Reads[String, String] = Reads(util.Success(_))
   implicit val intReads: Reads[String, Int] = Reads(s => Try(s.toInt))
@@ -162,7 +162,7 @@ class ArgumentsSuite extends FunSuite {
       val (errors, successes) = foo.segregate
 
       if (errors.isEmpty) Right((Seq.empty[String], successes))
-      else Left(MultipleErrors(errors))
+      else Left(MultipleErrors(errors.toList))
     }
 
     override def usage: String = "$name..."

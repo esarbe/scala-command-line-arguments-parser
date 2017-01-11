@@ -1,4 +1,4 @@
-package arguments
+package arguments.naive
 
 object EitherSyntax {
   implicit def toEithersOps[A, B](eithers: Seq[Either[A, B]]): EithersOps[A, B] = new EithersOps(eithers)

@@ -1,4 +1,4 @@
-package arguments
+package arguments.naive
 
 case class Flag[T](c: Char, defaults: (T, T)) extends Argument[T] {
 

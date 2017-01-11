@@ -168,7 +168,6 @@ class ParserSuite extends FunSuite {
   }
 
   test("mandatory argument") {
-     string("--foo")
-
+    def argument(long: String, short: Char, description: String) = {}
   }
 }

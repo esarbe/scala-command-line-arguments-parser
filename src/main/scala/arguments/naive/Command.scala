@@ -1,7 +1,4 @@
-package arguments
-
-import TrySyntax._
-import EitherSyntax._
+package arguments.naive
 
 import scala.util.Try
 
@@ -15,6 +12,7 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
   sealed trait State
   case object NotFound extends State
   case object Found extends State
+  case object HelpRequestFound extends State
 
   override def consume(args: Seq[String]): Result[(Seq[String], P)] = {
     val (before, after, state) =
@@ -22,7 +20,10 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
         state match {
           case NotFound if curr != cName  => (before :+ curr, after, state)
           case NotFound if curr == cName => (before, after, Found)
+          case Found if curr == "--help" => (before, after :+ curr, HelpRequestFound)
+          case Found if curr == "-h" => (before, after :+ curr, HelpRequestFound)
           case Found => (before, after :+ curr, Found)
+          case HelpRequestFound => (before, after, HelpRequestFound)
         }
       }
 
@@ -34,6 +35,7 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
           (before ++ remaining, readValue)
         }
       }
+      case HelpRequestFound => Left(HelpRequested(this))
     }
   }
 
