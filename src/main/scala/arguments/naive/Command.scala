@@ -1,5 +1,7 @@
 package arguments.naive
 
+import arguments.TrySyntax._
+import arguments.EitherSyntax._
 import scala.util.Try
 
 case object NoArgument extends Argument[Unit] {
@@ -9,6 +11,9 @@ case object NoArgument extends Argument[Unit] {
 }
 
 case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Reads[C, P]) extends Argument[P] {
+
+  val helpFlag = new HelpFlag()
+
   sealed trait State
   case object NotFound extends State
   case object Found extends State

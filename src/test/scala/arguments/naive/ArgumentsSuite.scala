@@ -153,7 +153,7 @@ class ArgumentsSuite extends FunSuite {
   }
 
   case class TrailingArgument[T](name: String)(implicit reads: Reads[String, T]) extends Argument[Seq[T]] {
-    import EitherSyntax._
+    import arguments.EitherSyntax._
     import TrySyntax._
 
     override def consume(args: Seq[String]): Result[(Seq[String], Seq[T])] = {
