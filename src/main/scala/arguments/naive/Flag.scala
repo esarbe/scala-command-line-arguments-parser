@@ -1,6 +1,6 @@
 package arguments.naive
 
-case class Flag[T](c: Char, defaults: (T, T)) extends Argument[T] {
+class Flag[T](c: Char, defaults: (T, T)) extends Argument[T] {
 
   val (ifFound, ifNotFound) = defaults
 

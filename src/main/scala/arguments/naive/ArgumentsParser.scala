@@ -7,11 +7,11 @@ final case class ArgumentsParserBuilder[I](argument: Argument[I]) {
 }
 
 final case class ArgumentsParser[I, O](argument: Argument[I], builder: Function[I, Result[O]]) {
-  val helpParser = Parameter[Boolean]('p')
+  val helpFlag = new HelpFlag()
 
   def parse(args: Array[String]): Result[O] = {
 
-    helpParser.consume(args).left.flatMap{ _ =>
+    helpFlag.consume(args).left.flatMap{ _ =>
       val result = argument.consume(args).right
       result.flatMap { case (rest, value) =>
         if (rest.nonEmpty) Left(UnknownArguments(rest))
