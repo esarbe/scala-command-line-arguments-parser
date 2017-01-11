@@ -20,11 +20,12 @@ Everyone using command line applications has used them; arguments. Those funny a
 Git has them, ls has them, only ```exit```, ```true``` and ```false``` seems to be able to exist without
 their comforting promise of variation.
 
-There is no common format for command line arguments, however. Though there are are libraries for all of mankind's
+There is no common format for command line arguments, however. There are are command line parsing libraries for all of mankind's
 programming languages - I bet there's even one for Visual Basic - but all of them vary in subtle ways. And since each
 application with command  line arguments has different argument names and different payload formats, each command line
 argument implementation forms a separate little language. So, a command line parser library is not actually implementing
 a specific language, rather it provides the tools for the the definition of a (configuration) language.
+
 
 ```
 L     ::= flags | flag | command | arguments
@@ -43,6 +44,14 @@ It's purpose is to receive a sequence of strings, consume as many elements of th
 return the remaining sequence, together with a object representing the result. In the error case, an error object
 is returned instead.
 
+By using combinator parser -  ```and``` along with ```or``` - we can build up a tree of parsers that then will consume
+the whole sequence of strings if the parsing is successful. If anything remains to be consumed, this is an error.
 
+This first naive approach works surprisingly well. Although the individual parsers are messy and complicated,
+they compose well and it's possible to build complex parsers that consume flags, condensed flags, arguments and commands.
+ Even error reporting works well, making it possible to generate nice error messages that are useful to the user.
+  
+What doesn't work is help. Especially nested help. We can handle a help request as just another error state,
+but this approach further complicates the individual parsers.
 
 ## The monadic approach
