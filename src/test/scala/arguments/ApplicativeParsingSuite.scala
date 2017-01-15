@@ -58,38 +58,29 @@ class ApplicativeParsingSuite extends FunSuite {
     import algebra._
     import dsl._
 
-    case class Empty[S, A](value: Boolean)
-    case class Print[S, A](value: String)
+    type Empty[S, A] = Boolean
+    type First[S: Symbol, A] = List[S]
 
     object parsers {
       implicit val emptyParser: Parser[Empty] = new Parser[Empty] {
-        override def empty[A, S: Symbol](a: => A): Empty[S, A] = Empty(true)
-        override def symbol[S: Symbol](s: => S): Empty[S, S] = Empty(false)
-        override def alt[A, S: Symbol](p: => Empty[S, A])(a: => Empty[S, A]): Empty[S, A] = Empty( p.value || a.value)
-        override def seq[A, B, S: Symbol](f: => Empty[S, A => B])(p: => Empty[S, A]): Empty[S, B] = Empty(f.value && p.value)
-        override def err[A, S: Symbol](p: => Empty[S, A])(a: => A, s: => String): Empty[S, A] = Empty(false)
+        override def empty[A, S: Symbol](a: => A): Empty[S, A] = true
+        override def symbol[S: Symbol](s: => S): Empty[S, S] = false
+        override def alt[A, S: Symbol](p: => Empty[S, A])(a: => Empty[S, A]): Empty[S, A] = p || a
+        override def seq[A, B, S: Symbol](f: => Empty[S, A => B])(p: => Empty[S, A]): Empty[S, B] = f && p
+        override def err[A, S: Symbol](p: => Empty[S, A])(a: => A, s: => String): Empty[S, A] = false
       }
 
-      implicit val printerParser: Parser[Print] = new Parser[Print] {
-        override def empty[A, S: Symbol](a: => A): Print[S, A] = Print("[]")
-        override def symbol[S: Symbol](s: => S): Print[S, S] = Print(s"$s")
-        override def alt[A, S: Symbol](p: => Print[S, A])(a: => Print[S, A]): Print[S, A] = Print( p.value +  "||" + a.value)
-        override def seq[A, B, S: Symbol](f: => Print[S, (A) => B])(p: => Print[S, A]): Print[S, B] =  Print(p.value + "&&" + f.value)
-        override def err[A, S: Symbol](p: => Print[S, A])(a: => A, s: => String): Print[S, A] = Print("E: s")
+      implicit val firstParser: Parser[First] = new Parser[First] {
+        override def empty[A, S: Symbol](a: => A): First[S, A] = Nil
+        override def symbol[S: Symbol](s: => S): First[S, S] = List(s)
+        override def alt[A, S: Symbol](p: => First[S, A])(a: => First[S, A]): First[S, A] = ???
+        override def seq[A, B, S: Symbol](f: => First[S, (A) => B])(p: => First[S, A]): First[S, B] = ???
+        override def err[A, S: Symbol](p: => First[S, A])(a: => A, s: => String): First[S, A] = ???
       }
     }
 
 
     object languages {
-
-      def foo[P[_, _]](implicit parser: Parser[P]): P[Char, String] = {
-        import parser._
-
-        def if_stat: P[Char, String] = ???
-        def then_stat: P[Char, String] = ???
-
-        ???
-      }
 
       def agLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = {
         import parser._
