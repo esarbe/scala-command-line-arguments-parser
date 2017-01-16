@@ -101,18 +101,14 @@ class ApplicativeParsingSuite extends FunSuite {
       import parsers._
 
       def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p.value
-      def print[A, S: Symbol](p: Print[S, A]): String = p.value
 
       val emptyResult = checkEmpty(emptyLanguage[Empty])
-      val emptyPrint = print(emptyLanguage[Print])
       println(s"does the empty language ($emptyPrint) accept the empty symbol? $emptyResult")
 
       val agResult = checkEmpty(agLanguage[Empty])
-      val agPrint =  print(agLanguage[Print])
       println(s"does the ag language ($agPrint) accept the empty symbol? $agResult")
 
       val agStarResult = checkEmpty(agStarLanguage[Empty])
-      //val agStarPrint = print(agStarLanguage[Print])
       println(s"does the agStar language (agStarPrint) accept the empty symbol? $agStarResult")
     }
   }
