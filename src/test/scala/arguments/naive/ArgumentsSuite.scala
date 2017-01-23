@@ -10,7 +10,6 @@ class ArgumentsSuite extends FunSuite {
   implicit val intReads: Reads[String, Int] = Reads(s => Try(s.toInt))
   implicit val doubleReads: Reads[String, Double] = Reads(s => Try(s.toDouble))
 
-
   test("expecting a single parameter") {
     val parser = ArgumentsParser(
       Parameter[String]('p'),
@@ -43,7 +42,7 @@ class ArgumentsSuite extends FunSuite {
   test("expecting flag to be present or not") {
 
     val parser = ArgumentsParserBuilder (
-      Flag('f', (true, false))
+      Flag('f')
     ).build( Right(_))
 
     assert(parser.parse(Array("-f")) == Right(true))
@@ -54,7 +53,7 @@ class ArgumentsSuite extends FunSuite {
   test("expecting flag a be present or not and an parameter to be set") {
     val parser = ArgumentsParserBuilder (
       MultipleArguments(
-        Flag('f', (true, false)),
+        Flag('f'),
         Parameter[String]('p')
       )
     ).build { Right(_) }
@@ -110,7 +109,7 @@ class ArgumentsSuite extends FunSuite {
     }
 
     val parser = ArgumentsParserBuilder(
-      Command("command", Flag('f', (true, false)))
+      Command("command", Flag('f'))
     ).build(Right(_))
 
     assert(parser.parse(Array("command")) == Right("no-flag"))

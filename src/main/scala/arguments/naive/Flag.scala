@@ -49,3 +49,8 @@ class Flag[T](c: Char, defaults: (T, T)) extends Argument[T] {
     else remaining
   }
 }
+
+
+object Flag {
+  def apply(short: Char) = new Flag[Boolean](short, (true, false))
+}
