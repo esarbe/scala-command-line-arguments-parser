@@ -39,7 +39,7 @@ class ApplicativeParsingSuite extends FunSuite {
       def or(a: => A): P[S, A] = parser <|> parser.empty(a)
     }
 
-    implicit class ParserLiftOps[S: Symbol, A, B, P[_, _]: Parser](parser: P[S, A => B]) {
+    implicit class ParserLiftedFunctionOps[S: Symbol, A, B, P[_, _]: Parser](parser: P[S, A => B]) {
       def seq(p: => P[S, A]): P[S, B] = implicitly[Parser[P]].seq(parser)(p)
       def <*>(p: => P[S, A]): P[S, B] = seq(p)
     }
@@ -59,7 +59,25 @@ class ApplicativeParsingSuite extends FunSuite {
     import dsl._
 
     type Empty[S, A] = Boolean
-    type First[S: Symbol, A] = List[S]
+
+    //class Empty[S, A](in: => Boolean){def eval: Boolean = in}
+    //implicit def boolToEmpty[S, A](in: => Boolean): Empty[S, A] = new Empty(in)
+    //implicit def emptyToBool(e: Empty[_, _]): Boolean = e.eval
+
+
+    //class LazyTuple2[A, B](a: => A, b: => B) { def _1: A = a; def _2: B = b}
+    //object LazyTuple2 {
+      //def apply[A, B](a: => A, b: => B): LazyTuple2[A, B] = new LazyTuple2(a, b)
+    //}
+
+    type LazyTuple2[A, B] = (A, B)
+    def LazyTuple2[A, B](a: A, b: B) = (a, b)
+
+    type First[S, A] = List[S]
+
+    type EmpFir[S, A] = LazyTuple2[Empty[S, A], First[S, A]]
+
+    def combine[S: Symbol, A](e: => Empty[S, A])(s1: => List[S])(s2: => List[S]): List[S] = s1 union (if (e) s2 else Nil)
 
     object parsers {
       implicit val emptyParser: Parser[Empty] = new Parser[Empty] {
@@ -73,9 +91,21 @@ class ApplicativeParsingSuite extends FunSuite {
       implicit val firstParser: Parser[First] = new Parser[First] {
         override def empty[A, S: Symbol](a: => A): First[S, A] = Nil
         override def symbol[S: Symbol](s: => S): First[S, S] = List(s)
-        override def alt[A, S: Symbol](p: => First[S, A])(a: => First[S, A]): First[S, A] = ???
+        override def alt[A, S: Symbol](p: => First[S, A])(a: => First[S, A]): First[S, A] = p union a
         override def seq[A, B, S: Symbol](f: => First[S, (A) => B])(p: => First[S, A]): First[S, B] = ???
-        override def err[A, S: Symbol](p: => First[S, A])(a: => A, s: => String): First[S, A] = ???
+        override def err[A, S: Symbol](p: => First[S, A])(a: => A, s: => String): First[S, A] = p
+      }
+      
+      implicit val empFir: Parser[EmpFir] = new Parser[EmpFir] {
+        override def empty[A, S: Symbol](a: => A) = LazyTuple2(emptyParser.empty(a), firstParser.empty(a))
+        override def symbol[S: Symbol](s: => S) = LazyTuple2(emptyParser.symbol(s), firstParser.symbol(s))
+        override def alt[A, S: Symbol](p: => EmpFir[S, A])(a: => EmpFir[S, A]) = LazyTuple2(emptyParser.alt(p._1)(a._1), firstParser.alt(p._2)(a._2))
+        override def seq[A, B, S: Symbol](f: => EmpFir[S, (A) => B])(p: => EmpFir[S, A]) = {
+          LazyTuple2(emptyParser.seq(f._1)(p._1), combine(f._1)(f._2)(p._2))
+        }
+
+        override def err[A, S: Symbol](p: => EmpFir[S, A])(a: => A, s: => String): EmpFir[S, A] =
+          LazyTuple2(emptyParser.err(p._1)(a, s), firstParser.err(p._2)(a, s))
       }
     }
 
@@ -90,26 +120,34 @@ class ApplicativeParsingSuite extends FunSuite {
       def agStarLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, List[Char]] = {
         import parser._
 
-        sym('a').map{ c0 => c1: List[Char] => c0 ++ c1} <*> many(symbol('g'))
+        sym('a').map{ c0 => c1: List[Char] => c0 ++ c1} <*> many(symbol('g')) <|> sym('a') <|> sym('b')
       }
 
       def emptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = parser.empty('f')
     }
 
+
+
+
     def run(): Unit = {
       import languages._
       import parsers._
 
-      def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p.value
+      def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p
+      def invokeFirst[A, S: Symbol](p: EmpFir[S, A]): List[S] = p._2
 
       val emptyResult = checkEmpty(emptyLanguage[Empty])
-      println(s"does the empty language ($emptyPrint) accept the empty symbol? $emptyResult")
+
+      println(s"does the empty language accept the empty symbol? $emptyResult")
 
       val agResult = checkEmpty(agLanguage[Empty])
-      println(s"does the ag language ($agPrint) accept the empty symbol? $agResult")
+      val agFirst = invokeFirst(agLanguage[EmpFir])
+      println(s"does the ag language accept the empty symbol? $agResult, $agFirst")
 
       val agStarResult = checkEmpty(agStarLanguage[Empty])
-      println(s"does the agStar language (agStarPrint) accept the empty symbol? $agStarResult")
+      val agStarFirst = invokeFirst(agStarLanguage[EmpFir])
+
+      println(s"does the agStar language (agStarPrint) accept the empty symbol? $agStarResult, $agStarFirst")
     }
   }
 
