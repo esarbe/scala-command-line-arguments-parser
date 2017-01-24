@@ -1,5 +1,6 @@
 package arguments
 
+import scala.languageFeature.higherKinds
 import org.scalatest.FunSuite
 
 /**
@@ -90,16 +91,36 @@ class ApplicativeParsingSuite extends FunSuite {
         }
 
         implicit val empFir: Parser[EmpFir] = new Parser[EmpFir] {
-          override def empty[A, S: Symbol](a: => A) = (emptyParser.empty(a), firstParser.empty(a))
-          override def symbol[S: Symbol](s: => S) = (emptyParser.symbol(s), firstParser.symbol(s))
-          override def alt[A, S: Symbol](p: => EmpFir[S, A])(a: => EmpFir[S, A]) = (emptyParser.alt(p._1)(a._1), firstParser.alt(p._2)(a._2))
-          override def seq[A, B, S: Symbol](f: => EmpFir[S, (A) => B])(p: => EmpFir[S, A]) = {
+          override def empty[A, S: Symbol](a: => A): EmpFir[S, A] = (emptyParser.empty(a), firstParser.empty(a))
+          override def symbol[S: Symbol](s: => S): EmpFir[S, S] = (emptyParser.symbol(s), firstParser.symbol(s))
+          override def alt[A, S: Symbol](p: => EmpFir[S, A])(a: => EmpFir[S, A]): EmpFir[S, A] = (emptyParser.alt(p._1)(a._1), firstParser.alt(p._2)(a._2))
+          override def seq[A, B, S: Symbol](f: => EmpFir[S, (A) => B])(p: => EmpFir[S, A]): EmpFir[S, B] = {
             (emptyParser.seq(f._1)(p._1), combine(f._1)(f._2)(p._2))
           }
 
           override def err[A, S: Symbol](p: => EmpFir[S, A])(a: => A, s: => String): EmpFir[S, A] =
             (emptyParser.err(p._1)(a, s), firstParser.err(p._2)(a, s))
         }
+      }
+
+      object deterministic {
+
+        import first._
+
+        type Input[S] = List[S]
+        type Follow[S] = List[S]
+        type DetParFun[S, A]= Input[S] => Follow[S] => (A, Input[S])
+
+        type DetPar[S, A] = (EmpFir[S, A], DetParFun[S, A])
+
+        implicit val detPar: Parser[DetPar] = new Parser[DetPar] {
+          override def empty[A, S: Symbol](a: => A): DetPar[S,A]  = ???
+          override def symbol[S: Symbol](s: => S): DetPar[S, S] = ???
+          override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetParFun[S, A] = ???
+          override def seq[A, B, S: Symbol](f: => DetPar[S, (A) => B])(p: => DetPar[S, A]): DetPar[S, B] = ???
+          override def err[A, S: Symbol](p: => DetPar[S, A])(a: => A, s: => String): DetParFun[S, A] = ???
+        }
+
       }
     }
 
@@ -118,9 +139,6 @@ class ApplicativeParsingSuite extends FunSuite {
 
       def emptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = parser.empty('f')
     }
-
-
-
 
     def run(): Unit = {
       import languages._
