@@ -11,16 +11,18 @@ final case class ArgumentsParser[I, O](argument: Argument[I], builder: Function[
 
   def parse(args: Array[String]): Result[O] = {
 
-    helpFlag.consume(args).right
-      .flatMap(_=> Left(HelpRequested(argument)))
-      .left.flatMap { _ =>
+    val helpResult = helpFlag.consume(args)
+    helpResult
+      .swap
+      .left.flatMap { _ => Left(HelpRequested(argument))}
+      .right.flatMap { _ =>
         val result = argument.consume(args).right
         result.flatMap { case (rest, value) =>
           if (rest.nonEmpty) Left(UnknownArguments(rest))
           else builder(value)
-      }.left.map(err => helpFlag.prioritizeHelp(err).getOrElse(err))
-    }
-  }
+          }.left.map(err => helpFlag.prioritizeHelp(err).getOrElse(err))
+        }
+      }
 
   def usage: String = argument.usage
 }

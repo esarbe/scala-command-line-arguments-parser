@@ -203,6 +203,18 @@ class ArgumentsSuite extends FunSuite {
     assert(parser.parse(Array("foo", "1.0d", "2.0d", "bar", "ay", "bee")) isLeft)
   }
 
+  test("help flag") {
+    val parser = ArgumentsParserBuilder(
+      NoArgument
+    ).build { Right(_)}
+
+
+    println(parser.parse(Array("-h")))
+    assert(parser.parse(Array("foo")) isLeft)
+    assert(parser.parse(Array("-f")) isLeft)
+    assert(parser.parse(Array("-h")) === Left(HelpRequested(NoArgument)))
+  }
+
   test("with help") {
     trait Action
     case object FooAction extends Action
@@ -217,7 +229,7 @@ class ArgumentsSuite extends FunSuite {
     ).build { Right(_) }
 
     assert(parser.parse(Array("-h","foo", "-h")) === Left(HelpRequested(fooCommandOrBarCommand)))
-    assert(parser.parse(Array("foo", "-h")) === Right(FooAction))
+    assert(parser.parse(Array("foo", "-h")) === Left(HelpRequested(fooCommand)))
     assert(parser.parse(Array("bar", "ay", "bee", "cee", "dee")) === Right(BarAction))
     assert(parser.parse(Array("qux", "1.0d", "2.0d", "1", "2", "3", "4")) isLeft)
   }

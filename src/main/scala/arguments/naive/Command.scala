@@ -31,11 +31,13 @@ case class Command[C, P](cName: String, child: Argument[C])(implicit reads: Read
     state match {
       case NotFound => Left(ArgumentExpected(this))
       case Found =>
-        val foo = helpFlag.consume(after).right.flatMap(_ => Left(HelpRequested(this)))
-        foo.left.flatMap { _ =>
-          child.consume(after).right.flatMap { case (remaining, value) =>
-
-            reads.read(value).toEither(CouldNotReadValue(value, _)).map { readValue =>
+        val helpResult = helpFlag.consume(after)
+        helpResult
+          .swap
+          .left.flatMap(_ => Left(HelpRequested(this)))
+          .right.flatMap { _ =>
+            child.consume(after).right.flatMap { case (remaining, value) =>
+              reads.read(value).toEither(CouldNotReadValue(value, _)).map { readValue =>
               (before ++ remaining, readValue)
             }
           }
