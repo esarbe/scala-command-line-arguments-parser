@@ -114,11 +114,34 @@ class ApplicativeParsingSuite extends FunSuite {
         type DetPar[S, A] = (EmpFir[S, A], DetParFun[S, A])
 
         implicit val detPar: Parser[DetPar] = new Parser[DetPar] {
-          override def empty[A, S: Symbol](a: => A): DetPar[S,A]  = ???
-          override def symbol[S: Symbol](s: => S): DetPar[S, S] = ???
-          override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetParFun[S, A] = ???
+
+          def pempty[S, A](a: A): List[S] => List[S] => (A, List[S]) = { input => _ => (a, input)}
+          def psymbol[S](s: S): List[S] => List[S] => (S, List[S]) = ??? //{ case _ :: tail => _ => (s, tail) }
+
+          override def empty[A, S: Symbol](a: => A): DetPar[S, A] = (empFir.empty(a), pempty(a))
+          override def symbol[S: Symbol](s: => S): DetPar[S, S] = (empFir.symbol(s), psymbol(s))
+          override def err[A, S: Symbol](p: => DetPar[S, A])(a: => A, s: => String) = {
+            //alt(p)(empFir.empty(a), pempty(a))
+            ???
+          }
+
+
+          override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetPar[S, A] = (p, a)    match {
+            case ((ef1 @ (e1, f1), p1),  (ef2 @ (e2, f2), p2) ) =>
+
+              /*def palt[A, S](p1: DetParFun[S, A], p2: DetParFun[S, A]) = (p1, p2) match {
+                case (Nil, follow) if e1 => p1(Nil)//(follow)
+                case (Nil, follow) if e2 => p2(Nil)//(follow)
+              }*/
+
+
+              //val p = palt(p1)(p2)
+
+              ???
+          }
+
           override def seq[A, B, S: Symbol](f: => DetPar[S, (A) => B])(p: => DetPar[S, A]): DetPar[S, B] = ???
-          override def err[A, S: Symbol](p: => DetPar[S, A])(a: => A, s: => String): DetParFun[S, A] = ???
+
         }
 
       }
