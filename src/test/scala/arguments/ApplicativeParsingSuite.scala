@@ -45,7 +45,7 @@ class ApplicativeParsingSuite extends FunSuite {
       def <*>(p: => P[S, A]): P[S, B] = seq(p)
     }
 
-    def many[S: Symbol, A, P[_,_]: Parser](p: => P[S, A]): P[S, List[A]] = {
+    def many[S: Symbol, A, P[_,_]](p: => P[S, A])(implicit parser: Parser[P]): P[S, List[A]] = {
       p.map { a => as: List[A] => a :: as} <*> (many(p) or Nil)
     }
 
@@ -103,6 +103,18 @@ class ApplicativeParsingSuite extends FunSuite {
         }
       }
 
+      object display {
+        type Display[S, A] = String
+        implicit val dsp: Parser[Display] = new Parser[Display] {
+          override def empty[A, S: Symbol](a: => A): Display[S, A] = ???
+          override def symbol[S: Symbol](s: => S): Display[S, S] = ???
+          override def alt[A, S: Symbol](p: => Display[S, A])(a: => Display[S, A]): Display[S, A] = ???
+          override def seq[A, B, S: Symbol](f: => Display[S, (A) => B])(p: => Display[S, A]): Display[S, B] = ???
+          override def err[A, S: Symbol](p: => Display[S, A])(a: => A, s: => String): Display[S, A] = ???
+        }
+
+      }
+
       object deterministic {
 
         import first._
@@ -126,24 +138,37 @@ class ApplicativeParsingSuite extends FunSuite {
           }
 
 
-          override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetPar[S, A] = (p, a)    match {
-            case ((ef1 @ (e1, f1), p1),  (ef2 @ (e2, f2), p2) ) =>
-
-              /*def palt[A, S](p1: DetParFun[S, A], p2: DetParFun[S, A]) = (p1, p2) match {
-                case (Nil, follow) if e1 => p1(Nil)//(follow)
-                case (Nil, follow) if e2 => p2(Nil)//(follow)
-              }*/
-
-
-              //val p = palt(p1)(p2)
-
-              ???
+          override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetPar[S, A] = (p, a) match {
+            case ((ef1 @ (e1, f1), p1),  (ef2 @ (e2, f2), p2) ) => ???
+              def palt(p1: DetParFun[S, A])(p2: DetParFun[S, A]): DetParFun[S, A] = {
+                inp => follow => (inp, follow) match {
+                  case (Nil, _) =>
+                    if (e1) p1(Nil)(follow)
+                    else if (e2) p2(Nil)(follow)
+                    else sys.error("Unexpected EOF")
+                  case (s :: _, _) =>
+                    if (f1.contains(s)) p1(inp)(follow)
+                    else if (f2.contains(s)) p2(inp)(follow)
+                    else if (e1 && follow.contains(s)) p1(inp)(follow)
+                    else if (e2 && follow.contains(s)) p2(inp)(follow)
+                    else sys.error("Illegal input symbol: " + s)
+                }
+              }
+              (ef1.alt(ef2), palt(p1)(p2))
           }
 
-          override def seq[A, B, S: Symbol](f: => DetPar[S, (A) => B])(p: => DetPar[S, A]): DetPar[S, B] = ???
-
+          override def seq[A, B, S: Symbol](f: => DetPar[S, (A) => B])(p: => DetPar[S, A]): DetPar[S, B] = (f, p) match {
+            case ((ef1, p1), (ef2 @ (e2, f2), p2)) =>
+              def pseq(p1: DetParFun[S, A => B])(p2: DetParFun[S, A]): DetParFun[S, B] = {
+                inp => follow =>
+                  val comb = combine[S, A](e2)
+                  val (v1, inp1) = p1(inp)(comb(f2)(follow))
+                  val (v2, inp2) = p2(inp1)(follow)
+                  (v1(v2), inp2)
+              }
+              (ef1.seq(ef2), pseq(p1)(p2))
+          }
         }
-
       }
     }
 
