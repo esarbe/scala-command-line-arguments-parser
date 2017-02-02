@@ -133,8 +133,7 @@ class ApplicativeParsingSuite extends FunSuite {
           override def empty[A, S: Symbol](a: => A): DetPar[S, A] = (empFir.empty(a), pempty(a))
           override def symbol[S: Symbol](s: => S): DetPar[S, S] = (empFir.symbol(s), psymbol(s))
           override def err[A, S: Symbol](p: => DetPar[S, A])(a: => A, s: => String) = {
-            //alt(p)(empFir.empty(a), pempty(a))
-            ???
+            alt(p)((empFir.empty(a), pempty(a)))
           }
 
 
