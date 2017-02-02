@@ -128,7 +128,10 @@ class ApplicativeParsingSuite extends FunSuite {
         implicit val detPar: Parser[DetPar] = new Parser[DetPar] {
 
           def pempty[S, A](a: A): List[S] => List[S] => (A, List[S]) = { input => _ => (a, input)}
-          def psymbol[S](s: S): List[S] => List[S] => (S, List[S]) = ??? //{ case _ :: tail => _ => (s, tail) }
+          def psymbol[S](s: S): List[S] => List[S] => (S, List[S]) = {
+            case _ :: tail => _ => (s, tail)
+            case Nil => sys.error("expecting symbol")
+          }
 
           override def empty[A, S: Symbol](a: => A): DetPar[S, A] = (empFir.empty(a), pempty(a))
           override def symbol[S: Symbol](s: => S): DetPar[S, S] = (empFir.symbol(s), psymbol(s))
@@ -138,29 +141,27 @@ class ApplicativeParsingSuite extends FunSuite {
 
 
           override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetPar[S, A] = (p, a) match {
-            case ((ef1 @ (e1, f1), p1),  (ef2 @ (e2, f2), p2) ) => ???
+            case ((ef1 @ (e1, f1), p1),  (ef2 @ (e2, f2), p2) ) =>
               def palt(p1: DetParFun[S, A])(p2: DetParFun[S, A]): DetParFun[S, A] = {
-                inp => follow => (inp, follow) match {
-                  case (Nil, _) =>
+                case Nil => follow =>
                     if (e1) p1(Nil)(follow)
                     else if (e2) p2(Nil)(follow)
                     else sys.error("Unexpected EOF")
-                  case (s :: _, _) =>
+                case inp @ (s :: _) => follow =>
                     if (f1.contains(s)) p1(inp)(follow)
                     else if (f2.contains(s)) p2(inp)(follow)
                     else if (e1 && follow.contains(s)) p1(inp)(follow)
                     else if (e2 && follow.contains(s)) p2(inp)(follow)
                     else sys.error("Illegal input symbol: " + s)
-                }
               }
-              (ef1.alt(ef2), palt(p1)(p2))
+              (empFir.alt(ef1)(ef2), palt(p1)(p2))
           }
 
           override def seq[A, B, S: Symbol](f: => DetPar[S, (A) => B])(p: => DetPar[S, A]): DetPar[S, B] = (f, p) match {
             case ((ef1, p1), (ef2 @ (e2, f2), p2)) =>
               def pseq(p1: DetParFun[S, A => B])(p2: DetParFun[S, A]): DetParFun[S, B] = {
                 inp => follow =>
-                  val comb = combine[S, A](e2)
+                  val comb = combine[S, A](e2) _
                   val (v1, inp1) = p1(inp)(comb(f2)(follow))
                   val (v2, inp2) = p2(inp1)(follow)
                   (v1(v2), inp2)
@@ -191,22 +192,29 @@ class ApplicativeParsingSuite extends FunSuite {
       import languages._
       import parsers.empty._
       import parsers.first._
+      import parsers.deterministic._
 
       def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p
       def invokeFirst[A, S: Symbol](p: EmpFir[S, A]): List[S] = p._2
+      def invokeDetParser[A, S: Symbol]( p: DetPar[S, A] )( input: Input[S]): A = p match {
+        case (_, p) =>
+          val (a, _) = p(input)(Nil)
+          a
+      }
+
 
       val emptyResult = checkEmpty(emptyLanguage[Empty])
-
       println(s"does the empty language accept the empty symbol? $emptyResult")
 
       val agResult = checkEmpty(agLanguage[Empty])
       val agFirst = invokeFirst(agLanguage[EmpFir])
-      println(s"does the ag language accept the empty symbol? $agResult, $agFirst")
+      val agDetPar = invokeDetParser(agLanguage[DetPar])("ag".toList)
+      println(s"does the ag language accept the empty symbol? $agResult, $agFirst, $agDetPar")
 
       val agStarResult = checkEmpty(agStarLanguage[Empty])
       val agStarFirst = invokeFirst(agStarLanguage[EmpFir])
-
       println(s"does the agStar language (agStarPrint) accept the empty symbol? $agStarResult, $agStarFirst")
+
     }
   }
 
