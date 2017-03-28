@@ -27,6 +27,12 @@ class ApplicativeParsingSuite extends FunSuite {
   object dsl {
     import algebra._
 
+    implicit class FunctionOps[A, B](f: A => B) {
+      def combine [S: Symbol, P[_, _]](p: => P[S, A])(implicit parser: Parser[P]): P[S, B] = {
+        parser.seq[A, B, S](parser.empty(f))(p)
+      }
+    }
+
     implicit class ParserOps[S: Symbol, A, P[_, _]: Parser](parser: P[S, A]) {
       def empty[E](a: E): P[S, E] = implicitly[Parser[P]].empty(a)
       def symbol(s: S): P[S, S] = implicitly[Parser[P]].symbol(s)
@@ -36,7 +42,7 @@ class ApplicativeParsingSuite extends FunSuite {
       def <|>(a: => P[S, A]): P[S, A] = alt(a)
 
       def map[B](f: A => B): P[S, B] = implicitly[Parser[P]].empty[A => B, S](f) <*> parser
-      def |?|(a: => A, s: => String): P[S, A] = err(a, s)
+      def <?>(a: => A, s: => String): P[S, A] = err(a, s)
       def or(a: => A): P[S, A] = parser <|> parser.empty(a)
     }
 
