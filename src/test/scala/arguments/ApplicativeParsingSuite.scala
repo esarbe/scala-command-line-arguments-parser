@@ -176,6 +176,28 @@ class ApplicativeParsingSuite extends FunSuite {
           }
         }
       }
+
+      object errorcorrection {
+        sealed trait EmptyDesc[S, A]
+        case class IsEmpty[S, A](a: A) extends EmptyDesc[S, A]
+        case class Insert[S, A](a: A, message: String) extends EmptyDesc[S, A]
+
+        def edempty[S, A](a: A): IsEmpty[S, A] = IsEmpty(a)
+        def edsymbol[S, A](a: A): Insert[S, A] = Insert(a, s"Inserted $a")
+        def ederr[S, A](a: A, message: String): Insert[S, A] = Insert(a, message)
+        def edalt[S, A](edp: EmptyDesc[S, A], edq: EmptyDesc[S, A]): EmptyDesc[S, A] = edp match {
+          case _: IsEmpty[S, A] => edp
+          case _: Insert[S, A] => edq
+        }
+
+        def edseq[S, A, B](edp: EmptyDesc[S, A => B], edq: EmptyDesc[S, A]) = (edp, edq) match {
+          case (IsEmpty(pv), IsEmpty(qv)) => IsEmpty(pv(qv))
+          case (IsEmpty(pv), Insert(qv, sq)) => Insert(pv(qv), sq)
+          case (Insert(pv, sp), IsEmpty(qv)) => Insert(pv(qv), sp)
+          case (Insert(pv, sp), Insert(qv, sq)) => Insert(pv(qv), sp ++ sq)
+        }
+      }
+
     }
 
     object languages {
@@ -188,7 +210,7 @@ class ApplicativeParsingSuite extends FunSuite {
       def agStarLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, List[Char]] = {
         import parser._
 
-        sym('a').map{ c0 => c1: List[Char] => c0 ++ c1} <*> many(symbol('g')) <|> sym('a') <|> sym('b')
+        ({ c0: List[Char] => c1: List[Char] => c0 ++ c1 } combine sym('a')) <*> many(symbol('g')) <|> sym('a') <|> sym('b')
       }
 
       def emptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = parser.empty('f')
