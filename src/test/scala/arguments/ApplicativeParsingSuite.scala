@@ -28,7 +28,7 @@ class ApplicativeParsingSuite extends FunSuite {
     import algebra._
 
     implicit class FunctionOps[A, B](f: A => B) {
-      def combine [S: Symbol, P[_, _]](p: => P[S, A])(implicit parser: Parser[P]): P[S, B] = {
+      def $[S: Symbol, P[_, _]](p: => P[S, A])(implicit parser: Parser[P]): P[S, B] = {
         parser.seq[A, B, S](parser.empty(f))(p)
       }
     }
@@ -39,11 +39,11 @@ class ApplicativeParsingSuite extends FunSuite {
       def alt(a: => P[S, A]): P[S, A] = implicitly[Parser[P]].alt(parser)(a)
 
       def err(a: => A, s: => String): P[S, A] = implicitly[Parser[P]].err(parser)(a, s)
-      def <|>(a: => P[S, A]): P[S, A] = alt(a)
+      def |(a: => P[S, A]): P[S, A] = alt(a)
 
       def map[B](f: A => B): P[S, B] = implicitly[Parser[P]].empty[A => B, S](f) <*> parser
-      def <?>(a: => A, s: => String): P[S, A] = err(a, s)
-      def or(a: => A): P[S, A] = parser <|> parser.empty(a)
+      def ?(a: => A, s: => String): P[S, A] = err(a, s)
+      def opt(a: => A): P[S, A] = parser | parser.empty(a)
     }
 
     implicit class ParserLiftedFunctionOps[S: Symbol, A, B, P[_, _]: Parser](parser: P[S, A => B]) {
@@ -52,7 +52,17 @@ class ApplicativeParsingSuite extends FunSuite {
     }
 
     def many[S: Symbol, A, P[_,_]](p: => P[S, A])(implicit parser: Parser[P]): P[S, List[A]] = {
-      p.map { a => as: List[A] => a :: as} <*> (many(p) or Nil)
+      ({ a: A => as: List[A] => a :: as} $ p) <*> many(p) opt Nil
+    }
+
+    def chainr[P[_,_], S: Symbol, PX](x: P[S, PX], op: P[S, PX => PX => PX])(implicit parser: Parser[P]): P[S, PX] = {
+
+      val id = ???
+
+      ({ x: PX => f: (PX => PX) => f(x) } $ x) <*> {
+
+        ({ (op: PX => PX => PX) => x: PX => op(_)(x) } $ op) <*> chainr(x, op.opt(id))
+      }
     }
 
     def sym[S: Symbol, P[_, _]](s: S)(implicit parser: Parser[P]): P[S, List[S]] = {
@@ -182,6 +192,13 @@ class ApplicativeParsingSuite extends FunSuite {
         case class IsEmpty[S, A](a: A) extends EmptyDesc[S, A]
         case class Insert[S, A](a: A, message: String) extends EmptyDesc[S, A]
 
+        type State[S] = (List[S], String)
+        type Noskip[S] = List[List[S]]
+        type ErrParFun[S, A] = State[S] => Noskip[S] => (A, State[S])
+
+        case class Look[S, A](s: S, a: A)
+        type ParserTab[S, A] = List[Look[S, ErrParFun[S, A]]]
+
         def edempty[S, A](a: A): IsEmpty[S, A] = IsEmpty(a)
         def edsymbol[S, A](a: A): Insert[S, A] = Insert(a, s"Inserted $a")
         def ederr[S, A](a: A, message: String): Insert[S, A] = Insert(a, message)
@@ -196,6 +213,9 @@ class ApplicativeParsingSuite extends FunSuite {
           case (Insert(pv, sp), IsEmpty(qv)) => Insert(pv(qv), sp)
           case (Insert(pv, sp), Insert(qv, sq)) => Insert(pv(qv), sp ++ sq)
         }
+
+
+        def tempty(a: Any) = Nil
       }
 
     }
@@ -204,16 +224,40 @@ class ApplicativeParsingSuite extends FunSuite {
 
       def agLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = {
         import parser._
-        symbol('a') <|> symbol('g')
+        symbol('a') | symbol('g')
       }
 
       def agStarLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, List[Char]] = {
         import parser._
 
-        ({ c0: List[Char] => c1: List[Char] => c0 ++ c1 } combine sym('a')) <*> many(symbol('g')) <|> sym('a') <|> sym('b')
+        ({ c0: List[Char] => c1: List[Char] => c0 ++ c1 } $ sym('a')) <*> many(symbol('g')) | sym('a') | sym('b')
       }
 
       def emptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = parser.empty('f')
+
+      def simpleLanguage[P[_, _]](implicit parser: Parser[P]) = {
+        import parser._
+
+
+        val f = { s: List[Char] => x: List[Char] => y: List[Char] => x ++ s ++ y }
+        val g: P[Char, (List[Char]) => (List[Char]) => List[Char]] = f $ sym(';')
+
+
+        //val f$sym: P[Char, (List[Char]) => (List[Char]) => List[Char]] = f $ sym(';')
+
+        def stats = chainr(stat, f $ sym(';'))
+        def stat = ???
+
+        def assignment: P[Char, List[Char]] = sym('a')
+        def cond: P[Char, List[Char]] = sym('c')
+        val then_part: P[Char, List[Char]] = ???
+
+        val if_stat =
+          ({ i: List[Char] => c: List[Char] => tp: List[Char] => ep: List[Char] => f: List[Char] => i ++ c ++ tp ++ ep ++ f} $ sym('I')) <*> cond <*> then_part
+
+
+
+      }
     }
 
     def run(): Unit = {
