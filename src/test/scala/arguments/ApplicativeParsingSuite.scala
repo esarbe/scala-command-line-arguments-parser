@@ -12,6 +12,12 @@ class ApplicativeParsingSuite extends FunSuite {
   implicit val stringSymbol: Symbol[String] = new Symbol[String] {}
   implicit val charSymbol: Symbol[Char] = new Symbol[Char] {}
 
+  object + {
+    def unapply[A](xs: Seq[A]): Option[(A, Seq[A])] =
+      if (xs.isEmpty) None
+      else Some((xs.head, xs.tail))
+  }
+
   object algebra {
 
     trait Parser[P[_, _]] {
@@ -55,14 +61,23 @@ class ApplicativeParsingSuite extends FunSuite {
       ({ a: A => as: List[A] => a :: as} $ p) <*> many(p) opt Nil
     }
 
-    def chainr[P[_,_], S: Symbol, PX](x: P[S, PX], op: P[S, PX => PX => PX])(implicit parser: Parser[P]): P[S, PX] = {
 
+    /*
+    def chainr1[P[_,_], S: Symbol, X](x: P[S, X], op: P[S, ]) = {
+      {}
+    }
+    */
+
+    def chainr[P[_,_], S: Symbol, PX](x: P[S, PX], op: P[S, PX => PX => PX])(implicit parser: Parser[P]): P[S, PX] = {
+      /*
       val id = ???
 
       ({ x: PX => f: (PX => PX) => f(x) } $ x) <*> {
 
         ({ (op: PX => PX => PX) => x: PX => op(_)(x) } $ op) <*> chainr(x, op.opt(id))
-      }
+      }*/
+
+      ???
     }
 
     def sym[S: Symbol, P[_, _]](s: S)(implicit parser: Parser[P]): P[S, List[S]] = {
@@ -92,17 +107,17 @@ class ApplicativeParsingSuite extends FunSuite {
       object first {
         import empty._
 
-        type First[S, A] = List[S]
+        type First[S, A] = Seq[S]
 
         type EmpFir[S, A] = (Empty[S, A], First[S, A])
 
-        def combine[S: Symbol, A](e: => Empty[S, A])(s1: => List[S])(s2: => List[S]): List[S] = s1 union (if (e) s2 else Nil)
+        def combine[S: Symbol, A](e: => Empty[S, A])(s1: => Seq[S])(s2: => Seq[S]): Seq[S] = s1 union (if (e) s2 else Nil)
 
         implicit val firstParser: Parser[First] = new Parser[First] {
           override def empty[A, S: Symbol](a: => A): First[S, A] = Nil
           override def symbol[S: Symbol](s: => S): First[S, S] = List(s)
           override def alt[A, S: Symbol](p: => First[S, A])(a: => First[S, A]): First[S, A] = p union a
-          override def seq[A, B, S: Symbol](f: => First[S, (A) => B])(p: => First[S, A]): First[S, B] = ???
+          override def seq[A, B, S: Symbol](f: => First[S, (A) => B])(p: => First[S, A]): First[S, B] = f
           override def err[A, S: Symbol](p: => First[S, A])(a: => A, s: => String): First[S, A] = p
         }
 
@@ -110,8 +125,8 @@ class ApplicativeParsingSuite extends FunSuite {
           override def empty[A, S: Symbol](a: => A): EmpFir[S, A] = (emptyParser.empty(a), firstParser.empty(a))
           override def symbol[S: Symbol](s: => S): EmpFir[S, S] = (emptyParser.symbol(s), firstParser.symbol(s))
           override def alt[A, S: Symbol](p: => EmpFir[S, A])(a: => EmpFir[S, A]): EmpFir[S, A] = (emptyParser.alt(p._1)(a._1), firstParser.alt(p._2)(a._2))
-          override def seq[A, B, S: Symbol](f: => EmpFir[S, (A) => B])(p: => EmpFir[S, A]): EmpFir[S, B] = {
-            (emptyParser.seq(f._1)(p._1), combine(f._1)(f._2)(p._2))
+          override def seq[A, B, S: Symbol](ef1: => EmpFir[S, (A) => B])(ef2: => EmpFir[S, A]): EmpFir[S, B] = {
+            (emptyParser.seq(ef1._1)(ef2._1), combine(ef1._1)(ef1._2)(ef2._2))
           }
 
           override def err[A, S: Symbol](p: => EmpFir[S, A])(a: => A, s: => String): EmpFir[S, A] =
@@ -119,34 +134,21 @@ class ApplicativeParsingSuite extends FunSuite {
         }
       }
 
-      object display {
-        type Display[S, A] = String
-        implicit val dsp: Parser[Display] = new Parser[Display] {
-          override def empty[A, S: Symbol](a: => A): Display[S, A] = ???
-          override def symbol[S: Symbol](s: => S): Display[S, S] = ???
-          override def alt[A, S: Symbol](p: => Display[S, A])(a: => Display[S, A]): Display[S, A] = ???
-          override def seq[A, B, S: Symbol](f: => Display[S, (A) => B])(p: => Display[S, A]): Display[S, B] = ???
-          override def err[A, S: Symbol](p: => Display[S, A])(a: => A, s: => String): Display[S, A] = ???
-        }
-
-      }
-
       object deterministic {
 
         import first._
 
-        type Input[S] = List[S]
-        type Follow[S] = List[S]
-        type DetParFun[S, A]= Input[S] => Follow[S] => (A, Input[S])
+        type Input[S] = Seq[S]
+        type Follow[S] = Seq[S]
+        type DetParFun[S, A] = Input[S] => Follow[S] => (A, Input[S])
 
         type DetPar[S, A] = (EmpFir[S, A], DetParFun[S, A])
 
         implicit val detPar: Parser[DetPar] = new Parser[DetPar] {
 
-          def pempty[S, A](a: A): List[S] => List[S] => (A, List[S]) = { input => _ => (a, input)}
-          def psymbol[S](s: S): List[S] => List[S] => (S, List[S]) = {
-            case _ :: tail => _ => (s, tail)
-            case Nil => sys.error("expecting symbol")
+          def pempty[S, A](a: A): Seq[S] => Seq[S] => (A, Seq[S]) = { input => _ => (a, input)}
+          def psymbol[S](s: S): Seq[S] => Seq[S] => (S, Seq[S]) = {
+            case _ +: tail => _ => (s, tail)
           }
 
           override def empty[A, S: Symbol](a: => A): DetPar[S, A] = (empFir.empty(a), pempty(a))
@@ -159,11 +161,11 @@ class ApplicativeParsingSuite extends FunSuite {
           override def alt[A, S: Symbol](p: => DetPar[S, A])(a: => DetPar[S, A]): DetPar[S, A] = (p, a) match {
             case ((ef1 @ (e1, f1), p1),  (ef2 @ (e2, f2), p2) ) =>
               def palt(p1: DetParFun[S, A])(p2: DetParFun[S, A]): DetParFun[S, A] = {
-                case Nil => follow =>
+                case Seq() => follow =>
                     if (e1) p1(Nil)(follow)
                     else if (e2) p2(Nil)(follow)
                     else sys.error("Unexpected EOF")
-                case inp @ (s :: _) => follow =>
+                case inp @ (s +: _) => follow =>
                     if (f1.contains(s)) p1(inp)(follow)
                     else if (f2.contains(s)) p2(inp)(follow)
                     else if (e1 && follow.contains(s)) p1(inp)(follow)
@@ -177,8 +179,8 @@ class ApplicativeParsingSuite extends FunSuite {
             case ((ef1, p1), (ef2 @ (e2, f2), p2)) =>
               def pseq(p1: DetParFun[S, A => B])(p2: DetParFun[S, A]): DetParFun[S, B] = {
                 inp => follow =>
-                  val comb = combine[S, A](e2) _
-                  val (v1, inp1) = p1(inp)(comb(f2)(follow))
+
+                  val (v1, inp1) = p1(inp)(combine(e2)(f2)(follow)) //s1 union (if (e) s2 else Nil)
                   val (v2, inp2) = p2(inp1)(follow)
                   (v1(v2), inp2)
               }
@@ -230,10 +232,21 @@ class ApplicativeParsingSuite extends FunSuite {
       def agStarLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, List[Char]] = {
         import parser._
 
-        ({ c0: List[Char] => c1: List[Char] => c0 ++ c1 } $ sym('a')) <*> many(symbol('g')) | sym('a') | sym('b')
+        ({ c0: List[Char] => c1: List[Char] => c0 ++ c1 } $ sym('a')) <*> many(symbol('g'))
       }
 
-      def emptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = parser.empty('f')
+      def emptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Char] = parser.empty('e')
+      def abOrEmptyLanguage[P[_, _]](implicit parser: Parser[P]): P[Char, Seq[Char]] = {
+        //val ab = parser.seq(parser.symbol('a'), parser.symbol('b))
+
+        import parser._
+        import dsl._
+        val ab: P[Char, Seq[Char]] = ({ a: Char => b: Char =>  Seq(a, b) } $ symbol('a')) <*> symbol('b')
+
+        val e: P[Char, Seq[Char]] = empty[Seq[Char], Char](List('e'))
+
+        parser.alt(ab)(e)
+      }
 
       def simpleLanguage[P[_, _]](implicit parser: Parser[P]) = {
         import parser._
@@ -243,7 +256,9 @@ class ApplicativeParsingSuite extends FunSuite {
         val g: P[Char, (List[Char]) => (List[Char]) => List[Char]] = f $ sym(';')
 
 
-        //val f$sym: P[Char, (List[Char]) => (List[Char]) => List[Char]] = f $ sym(';')
+        //val f_seq_sym: P[Char, (List[Char]) => (List[Char]) => List[Char]] = f $ sym(';')
+
+        // def chainr(x, sym: List[Char] => List[Char]: P[Char
 
         def stats = chainr(stat, f $ sym(';'))
         def stat = ???
@@ -260,36 +275,65 @@ class ApplicativeParsingSuite extends FunSuite {
       }
     }
 
-    def run(): Unit = {
-      import languages._
-      import parsers.empty._
-      import parsers.first._
-      import parsers.deterministic._
-
-      def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p
-      def invokeFirst[A, S: Symbol](p: EmpFir[S, A]): List[S] = p._2
-      def invokeDetParser[A, S: Symbol]( p: DetPar[S, A] )( input: Input[S]): A = p match {
-        case (_, p) =>
-          val (a, _) = p(input)(Nil)
-          a
-      }
-
-
-      val emptyResult = checkEmpty(emptyLanguage[Empty])
-      println(s"does the empty language accept the empty symbol? $emptyResult")
-
-      val agResult = checkEmpty(agLanguage[Empty])
-      val agFirst = invokeFirst(agLanguage[EmpFir])
-      val agDetPar = invokeDetParser(agLanguage[DetPar])("ag".toList)
-      println(s"does the ag language accept the empty symbol? $agResult, $agFirst, $agDetPar")
-
-      val agStarResult = checkEmpty(agStarLanguage[Empty])
-      val agStarFirst = invokeFirst(agStarLanguage[EmpFir])
-      println(s"does the agStar language (agStarPrint) accept the empty symbol? $agStarResult, $agStarFirst")
-
-    }
   }
 
-  example.run()
+  import example._
+
+  test("check empty") {
+    import languages._
+    import parsers.empty._
+
+    def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p
+
+    val emptyResult = checkEmpty(emptyLanguage[Empty])
+    assert(emptyResult === true, "Empty language should accept the empty symbol")
+
+    val abOrEmptyResult = checkEmpty(abOrEmptyLanguage[Empty])
+    assert(abOrEmptyResult === true, "AB|'' should accept the empty symbol")
+
+    val agResult = checkEmpty(agLanguage[Empty])
+    assert(agResult === false, "AG language should not accept the empty symbol")
+
+    val agStarResult = checkEmpty(agStarLanguage[Empty])
+    assert(agStarResult === false, "AG* language should not accept the empty symbol")
+
+
+  }
+
+  test("check languages") {
+
+    import languages._
+    import parsers.empty._
+    import parsers.first._
+    import parsers.deterministic._
+
+    def checkEmpty[A, S: Symbol](p: Empty[S, A]): Boolean = p
+    def invokeFirst[A, S: Symbol](p: EmpFir[S, A]): Seq[S] = p._2
+    def invokeDetParser[A, S: Symbol]( p: DetPar[S, A] )( input: Input[S]): A = p match {
+      case (_, p) =>
+        val (a, _) = p(input)(Nil)
+        a
+    }
+
+
+    val agDetPar = invokeDetParser(agLanguage[DetPar])("ag".toList)
+    assert(agDetPar === 'a')
+
+
+    val abOrEmptyFirst = invokeFirst(abOrEmptyLanguage[EmpFir])
+
+    assert(abOrEmptyFirst ===  "a".toSeq)
+
+    val abOrEmptyDetParResult = invokeDetParser(abOrEmptyLanguage[DetPar])(Seq())
+    assert(abOrEmptyDetParResult === "ab".toSeq)
+
+    val agStarFirst = invokeFirst(agStarLanguage[EmpFir])
+    assert(agStarFirst === "a".toSeq)
+
+  }
+
+  def reader[T](it: T): Seq[T] => (T, Seq[T]) = {
+    case head +: tail => (it, tail)
+  }
 
 }
